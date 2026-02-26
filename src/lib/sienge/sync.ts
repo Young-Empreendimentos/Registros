@@ -11,6 +11,25 @@ import {
 } from './client';
 import { calcularGatilho, isGatilhoAtingido } from '@/lib/calculations';
 
+// Empreendimentos permitidos (sienge_id -> nome):
+// 1    - Parque da Guarda Residence
+// 2    - Jardim do Parque
+// 2003 - Montecarlo
+// 2004 - Ilha dos Açores
+// 2005 - Aurora
+// 2007 - Parque Lorena l
+// 2009 - Parque Lorena ll
+// 2010 - Erico Verissimo
+// 2011 - Algarve
+// 2014 - Morada da Coxilha
+const ALLOWED_ENTERPRISE_IDS = new Set([1, 2, 2003, 2004, 2005, 2007, 2009, 2010, 2011, 2014]);
+
+export type ProgressCallback = (event: {
+  step: string;
+  detail: string;
+  percent: number;
+}) => void;
+
 function getServiceClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,7 +37,9 @@ function getServiceClient() {
   );
 }
 
-export async function runSync(): Promise<{
+export async function runSync(
+  onProgress?: ProgressCallback
+): Promise<{
   success: boolean;
   message: string;
   details: Record<string, unknown>;
@@ -26,6 +47,10 @@ export async function runSync(): Promise<{
   const supabase = getServiceClient();
   const details: Record<string, unknown> = {};
   let registrosAtualizados = 0;
+
+  const progress = (step: string, detail: string, percent: number) => {
+    onProgress?.({ step, detail, percent });
+  };
 
   const { data: logEntry } = await supabase
     .from('sync_logs')
@@ -35,20 +60,39 @@ export async function runSync(): Promise<{
 
   try {
     // 1. Fetch enterprises
+    progress('empreendimentos', 'Carregando empreendimentos do SIENGE...', 2);
     const enterprises = await fetchEnterprises();
-    details.enterprises_count = enterprises.length;
 
-    for (const ent of enterprises) {
+    const relevantEnterprises = enterprises.filter((ent) => 
+      ALLOWED_ENTERPRISE_IDS.has(ent.id)
+    );
+    details.enterprises_count = relevantEnterprises.length;
+
+    for (const ent of relevantEnterprises) {
       await supabase.from('empreendimentos').upsert(
         { sienge_id: ent.id, nome: ent.name },
         { onConflict: 'sienge_id' }
       );
     }
+    progress('empreendimentos', `${relevantEnterprises.length} empreendimentos carregados`, 8);
 
     // 2. Fetch units per enterprise
     let totalUnits = 0;
-    for (const ent of enterprises) {
-      const units = await fetchUnits(ent.id);
+    const skippedEnterprises: number[] = [];
+    const enterprisesWithUnits = relevantEnterprises;
+
+    for (let i = 0; i < enterprisesWithUnits.length; i++) {
+      const ent = enterprisesWithUnits[i];
+      const pct = 8 + Math.round((i / enterprisesWithUnits.length) * 25);
+      progress('unidades', `Carregando unidades: ${ent.name} (${i + 1}/${enterprisesWithUnits.length})`, pct);
+
+      let units;
+      try {
+        units = await fetchUnits(ent.id);
+      } catch {
+        skippedEnterprises.push(ent.id);
+        continue;
+      }
       totalUnits += units.length;
 
       const { data: empRow } = await supabase
@@ -72,10 +116,21 @@ export async function runSync(): Promise<{
       }
     }
     details.units_count = totalUnits;
+    if (skippedEnterprises.length > 0) {
+      details.skipped_enterprises = skippedEnterprises;
+    }
+    progress('unidades', `${totalUnits} unidades carregadas`, 35);
 
     // 3. Fetch all sales contracts
-    const contracts = await fetchSalesContracts();
+    progress('contratos', 'Carregando contratos de venda do SIENGE...', 37);
+    let contracts: SiengeContract[] = [];
+    try {
+      contracts = await fetchSalesContracts();
+    } catch (err) {
+      details.contracts_error = err instanceof Error ? err.message : 'Erro ao buscar contratos';
+    }
     details.contracts_count = contracts.length;
+    progress('contratos', `${contracts.length} contratos carregados`, 42);
 
     // Group active contracts by unit ID
     const activeContractsByUnit = new Map<number, SiengeContract>();
@@ -90,23 +145,68 @@ export async function runSync(): Promise<{
       }
     }
 
+    const activeContracts = Array.from(activeContractsByUnit.entries());
+    details.active_contracts = activeContracts.length;
+    progress('processando', `Processando ${activeContracts.length} contratos ativos...`, 45);
+
+    // Pre-load existing emails from DB to avoid redundant API calls
+    const { data: existingContratos } = await supabase
+      .from('contratos')
+      .select('sienge_contract_id, cliente_email');
+    const emailCache = new Map<number, string>();
+    for (const c of existingContratos || []) {
+      if (c.cliente_email) {
+        emailCache.set(c.sienge_contract_id, c.cliente_email);
+      }
+    }
+
+    // Deduplicate customer IDs to minimize API calls
+    const customerEmailMap = new Map<number, string>();
+    const uniqueCustomerIds: number[] = [];
+    for (const [, contract] of activeContracts) {
+      const mainCustomer = getMainCustomer(contract);
+      if (!mainCustomer) continue;
+      const cached = emailCache.get(contract.id);
+      if (cached) {
+        customerEmailMap.set(mainCustomer.id, cached);
+      } else if (!customerEmailMap.has(mainCustomer.id) && !uniqueCustomerIds.includes(mainCustomer.id)) {
+        uniqueCustomerIds.push(mainCustomer.id);
+      }
+    }
+
+    // Fetch only unknown customer emails
+    if (uniqueCustomerIds.length > 0) {
+      progress('emails', `Buscando e-mails de ${uniqueCustomerIds.length} clientes novos...`, 48);
+      for (let i = 0; i < uniqueCustomerIds.length; i++) {
+        const custId = uniqueCustomerIds[i];
+        if (i % 10 === 0) {
+          const pct = 48 + Math.round((i / uniqueCustomerIds.length) * 20);
+          progress('emails', `Buscando e-mails: ${i + 1}/${uniqueCustomerIds.length}`, pct);
+        }
+        try {
+          const customer = await fetchCustomer(custId);
+          customerEmailMap.set(custId, customer.email || '');
+        } catch {
+          customerEmailMap.set(custId, '');
+        }
+      }
+    }
+    progress('emails', 'E-mails carregados', 70);
+
     // 4. Process each active contract
-    for (const [unitSiengeId, contract] of activeContractsByUnit) {
+    for (let i = 0; i < activeContracts.length; i++) {
+      const [unitSiengeId, contract] = activeContracts[i];
+      if (i % 20 === 0) {
+        const pct = 70 + Math.round((i / activeContracts.length) * 22);
+        progress('salvando', `Salvando contratos: ${i + 1}/${activeContracts.length}`, pct);
+      }
+
       const mainCustomer = getMainCustomer(contract);
       if (!mainCustomer) continue;
 
-      // Get customer email
-      let clienteEmail = '';
-      try {
-        const customer = await fetchCustomer(mainCustomer.id);
-        clienteEmail = customer.email || '';
-      } catch {
-        // Customer email lookup failed, continue without
-      }
-
+      const clienteEmail = customerEmailMap.get(mainCustomer.id) || '';
       const paidValue = calculatePaidValue(contract);
 
-      // Get lote from DB
       const { data: loteRow } = await supabase
         .from('lotes')
         .select('id')
@@ -115,7 +215,6 @@ export async function runSync(): Promise<{
 
       if (!loteRow) continue;
 
-      // Upsert contract
       const { data: contratoRow } = await supabase
         .from('contratos')
         .upsert(
@@ -137,7 +236,6 @@ export async function runSync(): Promise<{
 
       if (!contratoRow) continue;
 
-      // Ensure registro exists for this lote
       const { data: existingRegistro } = await supabase
         .from('registros')
         .select('id, data_gatilho')
@@ -150,16 +248,12 @@ export async function runSync(): Promise<{
           contrato_id: contratoRow.id,
         });
       } else {
-        // Update contrato_id reference
         const updates: Record<string, unknown> = { contrato_id: contratoRow.id };
-
-        // Check and set data_gatilho if needed
         const gatilho = calcularGatilho(contratoRow);
         const atingido = isGatilhoAtingido(contratoRow, gatilho);
         if (atingido && !existingRegistro.data_gatilho) {
           updates.data_gatilho = new Date().toISOString().split('T')[0];
         }
-
         await supabase
           .from('registros')
           .update(updates)
@@ -168,8 +262,10 @@ export async function runSync(): Promise<{
 
       registrosAtualizados++;
     }
+    progress('salvando', `${registrosAtualizados} contratos processados`, 93);
 
     // 5. Mark contracts as inactive if no longer in active list
+    progress('finalizando', 'Atualizando status dos contratos...', 94);
     const activeSiengeIds = Array.from(activeContractsByUnit.values()).map((c) => c.id);
     if (activeSiengeIds.length > 0) {
       await supabase
@@ -179,6 +275,7 @@ export async function runSync(): Promise<{
     }
 
     // 6. Create registros for lotes without one
+    progress('finalizando', 'Criando registros para novos lotes...', 96);
     const { data: lotesWithoutRegistro } = await supabase.rpc('get_lotes_without_registros');
     if (lotesWithoutRegistro) {
       for (const lote of lotesWithoutRegistro) {
@@ -187,6 +284,7 @@ export async function runSync(): Promise<{
           contrato_id: null,
         });
       }
+      details.new_registros = lotesWithoutRegistro.length;
     }
 
     // Update log
@@ -201,6 +299,8 @@ export async function runSync(): Promise<{
         })
         .eq('id', logEntry.id);
     }
+
+    progress('concluido', `Sincronização concluída! ${registrosAtualizados} registros atualizados.`, 100);
 
     return {
       success: true,
@@ -221,6 +321,8 @@ export async function runSync(): Promise<{
         })
         .eq('id', logEntry.id);
     }
+
+    progress('erro', `Erro: ${errorMessage}`, -1);
 
     return {
       success: false,

@@ -33,8 +33,8 @@ export function DocumentPreview({ url, title, open, onClose }: DocumentPreviewPr
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-4xl h-[80vh]">
-        <DialogHeader>
+      <DialogContent className="max-w-5xl w-[95vw] h-[90vh] flex flex-col">
+        <DialogHeader className="shrink-0">
           <div className="flex items-center justify-between">
             <DialogTitle>{title}</DialogTitle>
             <div className="flex items-center gap-2">
@@ -49,10 +49,11 @@ export function DocumentPreview({ url, title, open, onClose }: DocumentPreviewPr
             </div>
           </div>
         </DialogHeader>
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 overflow-hidden">
           <iframe
             src={embedUrl}
             className="w-full h-full rounded-lg border border-zinc-700"
+            style={{ minHeight: 'calc(90vh - 80px)' }}
             allowFullScreen
           />
         </div>

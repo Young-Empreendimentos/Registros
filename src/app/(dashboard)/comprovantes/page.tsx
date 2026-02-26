@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { useProfile } from '@/hooks/use-profile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,45 +55,24 @@ export default function ComprovantesPage() {
   const [saving, setSaving] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<{ url: string; title: string } | null>(null);
 
-  const supabase = createClient();
   const { profile } = useProfile();
-  const canEdit = profile?.role !== 'leitura';
+  const canEdit = profile?.role !== 'leitor';
 
   const fetchData = useCallback(async () => {
     setLoading(true);
 
-    const [{ data: compData }, { data: lotesData }, { data: empsData }, { data: regsData }] = await Promise.all([
-      supabase.from('comprovantes').select('*').order('created_at', { ascending: false }),
-      supabase.from('lotes').select('*'),
-      supabase.from('empreendimentos').select('*'),
-      supabase.from('registros').select('id, lote_id'),
-    ]);
-
-    const empMap = new Map((empsData || []).map((e: { id: string; nome: string }) => [e.id, e.nome]));
-    const loteMap = new Map((lotesData || []).map((l: { id: string; numero: string; empreendimento_id: string }) => [l.id, l]));
-    const regMap = new Map((regsData || []).map((r: { id: string; lote_id: string }) => [r.lote_id, r.id]));
-
-    const enriched = (compData || []).map((c: ComprovanteRow) => {
-      const lote = loteMap.get(c.lote_id) as { numero: string; empreendimento_id: string } | undefined;
-      return {
-        ...c,
-        lote_numero: lote?.numero || 'N/A',
-        empreendimento_nome: lote ? (empMap.get(lote.empreendimento_id) || 'N/A') : 'N/A',
-      };
-    });
-
-    setComprovantes(enriched);
-
-    const loteOptions = (lotesData || []).map((l: { id: string; numero: string; empreendimento_id: string }) => ({
-      id: l.id,
-      numero: l.numero,
-      empreendimento: empMap.get(l.empreendimento_id) || 'N/A',
-      registro_id: regMap.get(l.id) || '',
-    })).filter((l: LoteOption) => l.registro_id);
-
-    setLotes(loteOptions);
-    setLoading(false);
-  }, [supabase]);
+    try {
+      const res = await fetch('/api/comprovantes');
+      if (!res.ok) throw new Error('Erro ao carregar comprovantes');
+      const data = await res.json();
+      setComprovantes(data.comprovantes || []);
+      setLotes(data.lotes || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -107,20 +85,28 @@ export default function ComprovantesPage() {
     const lote = lotes.find((l) => l.id === selectedLote);
     if (!lote) return;
 
-    await supabase.from('comprovantes').insert({
-      registro_id: lote.registro_id,
-      lote_id: lote.id,
-      url,
-      descricao: descricao || null,
-      uploaded_by: profile?.id,
-    });
+    try {
+      await fetch('/api/comprovantes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lote_id: lote.id,
+          registro_id: lote.registro_id,
+          url,
+          descricao: descricao || null,
+        }),
+      });
 
-    setDialogOpen(false);
-    setSelectedLote('');
-    setUrl('');
-    setDescricao('');
-    setSaving(false);
-    fetchData();
+      setDialogOpen(false);
+      setSelectedLote('');
+      setUrl('');
+      setDescricao('');
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

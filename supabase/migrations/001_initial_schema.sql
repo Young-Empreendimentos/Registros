@@ -1,13 +1,16 @@
 -- Enum para roles de usuário
-CREATE TYPE user_role AS ENUM ('admin', 'direcao', 'operador', 'leitura');
+CREATE TYPE user_role AS ENUM ('gestor', 'operador', 'leitor');
 
--- Tabela de perfis (extensão do Supabase Auth)
-CREATE TABLE profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT NOT NULL,
-  nome TEXT NOT NULL DEFAULT '',
-  role user_role NOT NULL DEFAULT 'leitura',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+-- Tabela de usuários (autenticação própria)
+CREATE TABLE usuarios (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nome TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  senha_hash TEXT NOT NULL,
+  role user_role NOT NULL DEFAULT 'leitor',
+  ativo BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Tabela de empreendimentos
@@ -86,7 +89,7 @@ CREATE TABLE comprovantes (
   lote_id UUID NOT NULL REFERENCES lotes(id) ON DELETE CASCADE,
   url TEXT NOT NULL,
   descricao TEXT,
-  uploaded_by UUID REFERENCES profiles(id),
+  uploaded_by UUID REFERENCES usuarios(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -101,6 +104,8 @@ CREATE TABLE sync_logs (
 );
 
 -- Índices
+CREATE INDEX idx_usuarios_email ON usuarios(email);
+CREATE INDEX idx_usuarios_ativo ON usuarios(ativo);
 CREATE INDEX idx_lotes_empreendimento ON lotes(empreendimento_id);
 CREATE INDEX idx_contratos_lote ON contratos(lote_id);
 CREATE INDEX idx_contratos_ativo ON contratos(ativo);
@@ -123,20 +128,10 @@ CREATE TRIGGER registros_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Trigger para criar perfil automaticamente ao criar usuário
-CREATE OR REPLACE FUNCTION handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO profiles (id, email, nome, role)
-  VALUES (NEW.id, NEW.email, COALESCE(NEW.raw_user_meta_data->>'full_name', ''), 'leitura');
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
+CREATE TRIGGER usuarios_updated_at
+  BEFORE UPDATE ON usuarios
   FOR EACH ROW
-  EXECUTE FUNCTION handle_new_user();
+  EXECUTE FUNCTION update_updated_at_column();
 
 -- Trigger para vincular comprovante ao registro automaticamente
 CREATE OR REPLACE FUNCTION link_comprovante_to_registro()
@@ -155,86 +150,6 @@ CREATE TRIGGER on_comprovante_created
   AFTER INSERT ON comprovantes
   FOR EACH ROW
   EXECUTE FUNCTION link_comprovante_to_registro();
-
--- RLS (Row Level Security)
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE empreendimentos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE lotes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE contratos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE registros ENABLE ROW LEVEL SECURITY;
-ALTER TABLE comprovantes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sync_logs ENABLE ROW LEVEL SECURITY;
-
--- Policies: Todos os usuários autenticados podem ler
-CREATE POLICY "Authenticated users can read profiles"
-  ON profiles FOR SELECT TO authenticated
-  USING (true);
-
-CREATE POLICY "Admins can manage profiles"
-  ON profiles FOR ALL TO authenticated
-  USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
-  );
-
-CREATE POLICY "Users can read empreendimentos"
-  ON empreendimentos FOR SELECT TO authenticated
-  USING (true);
-
-CREATE POLICY "Service role can manage empreendimentos"
-  ON empreendimentos FOR ALL TO service_role
-  USING (true);
-
-CREATE POLICY "Users can read lotes"
-  ON lotes FOR SELECT TO authenticated
-  USING (true);
-
-CREATE POLICY "Service role can manage lotes"
-  ON lotes FOR ALL TO service_role
-  USING (true);
-
-CREATE POLICY "Users can read contratos"
-  ON contratos FOR SELECT TO authenticated
-  USING (true);
-
-CREATE POLICY "Service role can manage contratos"
-  ON contratos FOR ALL TO service_role
-  USING (true);
-
-CREATE POLICY "Users can read registros"
-  ON registros FOR SELECT TO authenticated
-  USING (true);
-
-CREATE POLICY "Operadores+ can update registros"
-  ON registros FOR UPDATE TO authenticated
-  USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('admin', 'direcao', 'operador'))
-  );
-
-CREATE POLICY "Service role can manage registros"
-  ON registros FOR ALL TO service_role
-  USING (true);
-
-CREATE POLICY "Users can read comprovantes"
-  ON comprovantes FOR SELECT TO authenticated
-  USING (true);
-
-CREATE POLICY "Operadores+ can insert comprovantes"
-  ON comprovantes FOR INSERT TO authenticated
-  WITH CHECK (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('admin', 'direcao', 'operador'))
-  );
-
-CREATE POLICY "Service role can manage comprovantes"
-  ON comprovantes FOR ALL TO service_role
-  USING (true);
-
-CREATE POLICY "Users can read sync_logs"
-  ON sync_logs FOR SELECT TO authenticated
-  USING (true);
-
-CREATE POLICY "Service role can manage sync_logs"
-  ON sync_logs FOR ALL TO service_role
-  USING (true);
 
 -- Função auxiliar para encontrar lotes sem registro
 CREATE OR REPLACE FUNCTION get_lotes_without_registros()

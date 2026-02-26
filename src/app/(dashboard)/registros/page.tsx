@@ -4,7 +4,6 @@ import { useRegistros } from '@/hooks/use-registros';
 import { useProfile } from '@/hooks/use-profile';
 import { RegistrosTable } from '@/components/data-table/registros-table';
 import type { RegistroCompleto } from '@/types';
-import Image from 'next/image';
 
 export default function RegistrosPage() {
   const { registros, loading, error, updateRegistro } = useRegistros();
@@ -99,10 +98,7 @@ export default function RegistrosPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="relative w-8 h-8">
-            <Image src="/logo-young.png" alt="Young" fill className="object-contain opacity-30" />
-          </div>
+        <div>
           <div>
             <h1 className="text-2xl font-bold text-white">Registros</h1>
             <p className="text-zinc-500 text-sm">
@@ -135,7 +131,7 @@ export default function RegistrosPage() {
       {/* Table */}
       <RegistrosTable
         registros={registros}
-        userRole={profile?.role || 'leitura'}
+        userRole={profile?.role || 'leitor'}
         onUpdate={handleUpdate}
         onSendBoleto={handleSendBoleto}
         onSendOP={handleSendOP}

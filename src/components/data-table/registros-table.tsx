@@ -8,15 +8,18 @@ import { DocumentPreview } from '@/components/document-preview';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { MultiSelect } from '@/components/ui/multi-select';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Mail, Search, X, ArrowUpDown } from 'lucide-react';
+import {
+  Mail,
+  Search,
+  X,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from 'lucide-react';
 
 interface RegistrosTableProps {
   registros: RegistroCompleto[];
@@ -32,6 +35,8 @@ interface RegistrosTableProps {
 type SortField = 'lote' | 'empreendimento' | 'etapa' | 'dias' | 'valor_total' | 'valor_ja_pago' | 'data_contrato';
 type SortDir = 'asc' | 'desc';
 
+const PAGE_SIZE = 50;
+
 const ALL_ETAPAS: Etapa[] = [
   'Com pendências',
   'Concluído',
@@ -46,6 +51,51 @@ const ALL_ETAPAS: Etapa[] = [
   'Propriedade Young',
 ];
 
+const EMP_COLORS: Record<string, string> = {};
+const COLOR_PALETTE = [
+  'bg-orange-500/15 text-orange-300 border-orange-500/30',
+  'bg-sky-500/15 text-sky-300 border-sky-500/30',
+  'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+  'bg-violet-500/15 text-violet-300 border-violet-500/30',
+  'bg-pink-500/15 text-pink-300 border-pink-500/30',
+  'bg-amber-500/15 text-amber-300 border-amber-500/30',
+  'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
+  'bg-rose-500/15 text-rose-300 border-rose-500/30',
+  'bg-lime-500/15 text-lime-300 border-lime-500/30',
+  'bg-indigo-500/15 text-indigo-300 border-indigo-500/30',
+  'bg-teal-500/15 text-teal-300 border-teal-500/30',
+  'bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/30',
+];
+
+const LEFT_BORDER_PALETTE = [
+  'border-l-orange-500',
+  'border-l-sky-500',
+  'border-l-emerald-500',
+  'border-l-violet-500',
+  'border-l-pink-500',
+  'border-l-amber-500',
+  'border-l-cyan-500',
+  'border-l-rose-500',
+  'border-l-lime-500',
+  'border-l-indigo-500',
+  'border-l-teal-500',
+  'border-l-fuchsia-500',
+];
+
+function getEmpColor(name: string): string {
+  if (!EMP_COLORS[name]) {
+    const idx = Object.keys(EMP_COLORS).length % COLOR_PALETTE.length;
+    EMP_COLORS[name] = COLOR_PALETTE[idx];
+  }
+  return EMP_COLORS[name];
+}
+
+function getEmpBorder(name: string): string {
+  getEmpColor(name);
+  const idx = Object.keys(EMP_COLORS).indexOf(name) % LEFT_BORDER_PALETTE.length;
+  return LEFT_BORDER_PALETTE[idx];
+}
+
 export function RegistrosTable({
   registros,
   userRole,
@@ -57,20 +107,30 @@ export function RegistrosTable({
   filterActiveOnly = false,
 }: RegistrosTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [etapaFilter, setEtapaFilter] = useState<string>('all');
-  const [empFilter, setEmpFilter] = useState<string>('all');
-  const [boolFilter, setBoolFilter] = useState<string>('all');
+  const [etapaFilters, setEtapaFilters] = useState<string[]>([]);
+  const [empFilters, setEmpFilters] = useState<string[]>([]);
+  const [boolFilters, setBoolFilters] = useState<string[]>([]);
   const [sortField, setSortField] = useState<SortField>('lote');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [page, setPage] = useState(0);
   const [previewDoc, setPreviewDoc] = useState<{ url: string; title: string } | null>(null);
 
-  const canEdit = userRole !== 'leitura';
-  const canEditEtapa = userRole === 'admin' || userRole === 'direcao';
+  const canEdit = userRole !== 'leitor';
+  const canEditEtapa = userRole === 'gestor';
 
   const empreendimentos = useMemo(() => {
     const set = new Set(registros.map((r) => r.empreendimento.nome));
     return Array.from(set).sort();
   }, [registros]);
+
+  const etapaOptions = useMemo(() => ALL_ETAPAS.map((e) => ({ value: e, label: e })), []);
+  const empOptions = useMemo(() => empreendimentos.map((e) => ({ value: e, label: e })), [empreendimentos]);
+  const boolOptions = [
+    { value: 'impugnado', label: 'Impugnados' },
+    { value: 'segurar', label: 'Segurar registro' },
+    { value: 'resp_cliente', label: 'Resp. cliente' },
+    { value: 'caixa', label: 'Financ. CAIXA' },
+  ];
 
   const filtered = useMemo(() => {
     let data = [...registros];
@@ -95,29 +155,26 @@ export function RegistrosTable({
       );
     }
 
-    if (etapaFilter !== 'all') {
-      data = data.filter((r) => r.etapa === etapaFilter);
+    if (etapaFilters.length > 0) {
+      data = data.filter((r) => etapaFilters.includes(r.etapa));
     }
 
-    if (empFilter !== 'all') {
-      data = data.filter((r) => r.empreendimento.nome === empFilter);
+    if (empFilters.length > 0) {
+      data = data.filter((r) => empFilters.includes(r.empreendimento.nome));
     }
 
-    if (boolFilter !== 'all') {
-      switch (boolFilter) {
-        case 'impugnado':
-          data = data.filter((r) => r.registro.impugnado);
-          break;
-        case 'segurar':
-          data = data.filter((r) => r.registro.segurar_registro);
-          break;
-        case 'resp_cliente':
-          data = data.filter((r) => r.registro.responsabilidade_cliente);
-          break;
-        case 'caixa':
-          data = data.filter((r) => r.registro.financiamento_caixa);
-          break;
-      }
+    if (boolFilters.length > 0) {
+      data = data.filter((r) => {
+        return boolFilters.some((f) => {
+          switch (f) {
+            case 'impugnado': return r.registro.impugnado;
+            case 'segurar': return r.registro.segurar_registro;
+            case 'resp_cliente': return r.registro.responsabilidade_cliente;
+            case 'caixa': return r.registro.financiamento_caixa;
+            default: return false;
+          }
+        });
+      });
     }
 
     data.sort((a, b) => {
@@ -125,9 +182,11 @@ export function RegistrosTable({
       switch (sortField) {
         case 'lote':
           cmp = a.lote.numero.localeCompare(b.lote.numero, 'pt-BR', { numeric: true });
+          if (cmp === 0) cmp = a.empreendimento.nome.localeCompare(b.empreendimento.nome);
           break;
         case 'empreendimento':
           cmp = a.empreendimento.nome.localeCompare(b.empreendimento.nome);
+          if (cmp === 0) cmp = a.lote.numero.localeCompare(b.lote.numero, 'pt-BR', { numeric: true });
           break;
         case 'etapa':
           cmp = ALL_ETAPAS.indexOf(a.etapa) - ALL_ETAPAS.indexOf(b.etapa);
@@ -149,7 +208,20 @@ export function RegistrosTable({
     });
 
     return data;
-  }, [registros, searchTerm, etapaFilter, empFilter, boolFilter, sortField, sortDir, filterActiveOnly]);
+  }, [registros, searchTerm, etapaFilters, empFilters, boolFilters, sortField, sortDir, filterActiveOnly]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paged = useMemo(() => {
+    const start = page * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
+
+  const safeSetPage = (p: number) => setPage(Math.max(0, Math.min(p, totalPages - 1)));
+
+  useMemo(() => {
+    if (page >= totalPages && totalPages > 0) setPage(totalPages - 1);
+    if (page > 0 && filtered.length === 0) setPage(0);
+  }, [filtered.length, totalPages, page]);
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
@@ -158,6 +230,12 @@ export function RegistrosTable({
       setSortField(field);
       setSortDir('asc');
     }
+    setPage(0);
+  };
+
+  const handleMultiFilterChange = (setter: (v: string[]) => void) => (v: string[]) => {
+    setter(v);
+    setPage(0);
   };
 
   const SortHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
@@ -179,12 +257,12 @@ export function RegistrosTable({
           <Input
             placeholder="Buscar lote, cliente, empreendimento..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => { setSearchTerm(e.target.value); setPage(0); }}
             className="pl-10"
           />
           {searchTerm && (
             <button
-              onClick={() => setSearchTerm('')}
+              onClick={() => { setSearchTerm(''); setPage(0); }}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
             >
               <X className="w-4 h-4" />
@@ -192,46 +270,29 @@ export function RegistrosTable({
           )}
         </div>
 
-        <Select value={etapaFilter} onValueChange={setEtapaFilter}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Filtrar etapa" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as etapas</SelectItem>
-            {ALL_ETAPAS.map((etapa) => (
-              <SelectItem key={etapa} value={etapa}>
-                {etapa}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <MultiSelect
+          options={etapaOptions}
+          selected={etapaFilters}
+          onChange={handleMultiFilterChange(setEtapaFilters)}
+          placeholder="Etapas"
+          className="w-[200px]"
+        />
 
-        <Select value={empFilter} onValueChange={setEmpFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Empreendimento" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            {empreendimentos.map((emp) => (
-              <SelectItem key={emp} value={emp}>
-                {emp}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <MultiSelect
+          options={empOptions}
+          selected={empFilters}
+          onChange={handleMultiFilterChange(setEmpFilters)}
+          placeholder="Empreendimentos"
+          className="w-[200px]"
+        />
 
-        <Select value={boolFilter} onValueChange={setBoolFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filtros" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Sem filtro extra</SelectItem>
-            <SelectItem value="impugnado">Impugnados</SelectItem>
-            <SelectItem value="segurar">Segurar registro</SelectItem>
-            <SelectItem value="resp_cliente">Resp. cliente</SelectItem>
-            <SelectItem value="caixa">Financ. CAIXA</SelectItem>
-          </SelectContent>
-        </Select>
+        <MultiSelect
+          options={boolOptions}
+          selected={boolFilters}
+          onChange={handleMultiFilterChange(setBoolFilters)}
+          placeholder="Flags"
+          className="w-[180px]"
+        />
 
         <span className="text-xs text-zinc-500">
           {filtered.length} registro(s)
@@ -245,11 +306,8 @@ export function RegistrosTable({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-zinc-800 bg-zinc-900/80">
-                  <th className="sticky left-0 z-10 bg-zinc-900 px-3 py-3 text-left">
-                    <SortHeader field="lote">Lote</SortHeader>
-                  </th>
-                  <th className="px-3 py-3 text-left">
-                    <SortHeader field="empreendimento">Empreend.</SortHeader>
+                  <th className="sticky left-0 z-10 bg-zinc-900 px-3 py-3 text-left min-w-[200px]">
+                    <SortHeader field="empreendimento">Empreend. / Lote</SortHeader>
                   </th>
                   <th className="px-3 py-3 text-left">
                     <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Cliente</span>
@@ -328,18 +386,25 @@ export function RegistrosTable({
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((item) => (
+                {paged.map((item) => {
+                  const isConcluido = item.etapa === 'Concluído';
+                  const rowBg = isConcluido ? 'bg-emerald-950/40' : '';
+                  const cellBg = isConcluido ? 'bg-emerald-950/40' : 'bg-zinc-900';
+                  
+                  return (
                   <tr
                     key={item.registro.id}
-                    className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors"
+                    className={`border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors border-l-3 ${getEmpBorder(item.empreendimento.nome)} ${rowBg}`}
                   >
-                    {/* Lote */}
-                    <td className="sticky left-0 z-10 bg-zinc-900 px-3 py-2.5 font-medium text-white">
-                      {item.lote.numero}
+                    {/* Empreendimento + Lote (merged) */}
+                    <td className={`sticky left-0 z-10 px-3 py-2.5 border-l-3 ${getEmpBorder(item.empreendimento.nome)} ${cellBg}`}>
+                      <div className="flex flex-col gap-0.5">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border w-fit ${getEmpColor(item.empreendimento.nome)}`}>
+                          {item.empreendimento.nome}
+                        </span>
+                        <span className="text-white font-medium text-sm">{item.lote.numero}</span>
+                      </div>
                     </td>
-
-                    {/* Empreendimento */}
-                    <td className="px-3 py-2.5 text-zinc-300">{item.empreendimento.nome}</td>
 
                     {/* Cliente */}
                     <td className="px-3 py-2.5">
@@ -584,7 +649,7 @@ export function RegistrosTable({
                       </div>
                     </td>
 
-                    {/* Observações (only in "Em Andamento" tab) */}
+                    {/* Observações */}
                     {showObservacoes && (
                       <td className="px-3 py-2.5 min-w-[200px]">
                         <InlineTextEdit
@@ -596,11 +661,12 @@ export function RegistrosTable({
                       </td>
                     )}
                   </tr>
-                ))}
+                  );
+                })}
 
-                {filtered.length === 0 && (
+                {paged.length === 0 && (
                   <tr>
-                    <td colSpan={showObservacoes ? 26 : 25} className="px-3 py-12 text-center text-zinc-600">
+                    <td colSpan={showObservacoes ? 25 : 24} className="px-3 py-12 text-center text-zinc-600">
                       Nenhum registro encontrado
                     </td>
                   </tr>
@@ -610,6 +676,32 @@ export function RegistrosTable({
           </div>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-zinc-800 bg-zinc-900/80">
+            <span className="text-xs text-zinc-500">
+              {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} de {filtered.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => safeSetPage(0)} disabled={page === 0}>
+                <ChevronsLeft className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => safeSetPage(page - 1)} disabled={page === 0}>
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="text-xs text-zinc-400 px-3">
+                Página {page + 1} de {totalPages}
+              </span>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => safeSetPage(page + 1)} disabled={page >= totalPages - 1}>
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => safeSetPage(totalPages - 1)} disabled={page >= totalPages - 1}>
+                <ChevronsRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Document Preview Dialog */}

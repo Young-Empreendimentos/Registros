@@ -56,7 +56,7 @@ export function calcularEtapa(
     return 'Com pendências';
   }
 
-  if (registro.matricula_url) {
+  if (registro.data_recebimento_ri || registro.matricula_url) {
     return 'Concluído';
   }
 

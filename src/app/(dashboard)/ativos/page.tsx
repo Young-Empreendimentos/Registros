@@ -47,7 +47,7 @@ export default function AtivosPage() {
 
       <RegistrosTable
         registros={registros}
-        userRole={profile?.role || 'leitura'}
+        userRole={profile?.role || 'leitor'}
         onUpdate={handleUpdate}
         showObservacoes={true}
         filterActiveOnly={true}

@@ -1,43 +1,100 @@
 'use client';
 
-import { createClient } from '@/lib/supabase/client';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import Image from 'next/image';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Logo } from '@/components/logo';
+import { LogIn, UserPlus } from 'lucide-react';
 
 export default function LoginPage() {
-  const supabase = createClient();
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [isSetup, setIsSetup] = useState(false);
+  const [setupNome, setSetupNome] = useState('');
+  const [checkingSetup, setCheckingSetup] = useState(true);
 
-  const handleGoogleLogin = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/api/auth/callback`,
-        queryParams: {
-          hd: 'youngempreendimentos.com.br',
-        },
-      },
-    });
+  useEffect(() => {
+    fetch('/api/auth/setup')
+      .then((res) => res.json())
+      .then((data) => {
+        setIsSetup(data.needsSetup);
+        setCheckingSetup(false);
+      })
+      .catch(() => setCheckingSetup(false));
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Erro ao fazer login');
+        return;
+      }
+      router.push('/registros');
+      router.refresh();
+    } catch {
+      setError('Erro de conexão');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleSetup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome: setupNome, email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Erro ao criar conta');
+        return;
+      }
+      router.push('/registros');
+      router.refresh();
+    } catch {
+      setError('Erro de conexão');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (checkingSetup) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f]">
+        <div className="w-8 h-8 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f] relative overflow-hidden">
-      {/* Background gradient effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-orange-600/5 via-transparent to-orange-600/5" />
       <div className="absolute top-1/4 -left-32 w-64 h-64 bg-orange-600/10 rounded-full blur-3xl" />
       <div className="absolute bottom-1/4 -right-32 w-64 h-64 bg-orange-600/10 rounded-full blur-3xl" />
 
       <div className="relative z-10 w-full max-w-md mx-4">
         <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-2xl p-8 shadow-2xl">
-          {/* Logo */}
           <div className="flex flex-col items-center mb-8">
-            <div className="relative w-20 h-20 mb-4">
-              <Image
-                src="/logo-young.png"
-                alt="Young Empreendimentos"
-                fill
-                className="object-contain"
-                priority
-              />
+            <div className="mb-5">
+              <Logo size="lg" />
             </div>
             <h1 className="text-2xl font-bold text-white tracking-tight">
               Controle de Registros
@@ -47,42 +104,101 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Separator */}
-          <div className="flex items-center gap-4 mb-8">
+          <div className="flex items-center gap-4 mb-6">
             <div className="flex-1 h-px bg-zinc-800" />
-            <span className="text-xs text-zinc-600 uppercase tracking-wider">Acesso</span>
+            <span className="text-xs text-zinc-600 uppercase tracking-wider">
+              {isSetup ? 'Configuração Inicial' : 'Acesso'}
+            </span>
             <div className="flex-1 h-px bg-zinc-800" />
           </div>
 
-          {/* Login Button */}
-          <Button
-            onClick={handleGoogleLogin}
-            className="w-full h-12 text-base font-medium gap-3"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path
-                fill="currentColor"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="currentColor"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-              />
-            </svg>
-            Entrar com Google
-          </Button>
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 mb-4">
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
 
-          <p className="text-zinc-600 text-xs text-center mt-6">
-            Use sua conta @youngempreendimentos.com.br
-          </p>
+          {isSetup ? (
+            <form onSubmit={handleSetup} className="space-y-4">
+              <p className="text-zinc-400 text-sm text-center mb-4">
+                Crie a conta de administrador para começar.
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="nome">Nome</Label>
+                <Input
+                  id="nome"
+                  value={setupNome}
+                  onChange={(e) => setSetupNome(e.target.value)}
+                  placeholder="Seu nome"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  minLength={6}
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full h-12 text-base font-medium gap-3"
+                disabled={loading}
+              >
+                <UserPlus className="w-5 h-5" />
+                {loading ? 'Criando...' : 'Criar Conta Admin'}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full h-12 text-base font-medium gap-3"
+                disabled={loading}
+              >
+                <LogIn className="w-5 h-5" />
+                {loading ? 'Entrando...' : 'Entrar'}
+              </Button>
+            </form>
+          )}
         </div>
       </div>
     </div>

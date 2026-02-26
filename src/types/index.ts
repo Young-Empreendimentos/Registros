@@ -1,12 +1,15 @@
-export type UserRole = 'admin' | 'direcao' | 'operador' | 'leitura';
+export type UserRole = 'gestor' | 'operador' | 'leitor';
 
-export interface Profile {
+export interface Usuario {
   id: string;
   email: string;
   nome: string;
   role: UserRole;
-  created_at: string;
+  ativo?: boolean;
+  created_at?: string;
 }
+
+export type Profile = Usuario;
 
 export interface Empreendimento {
   id: string;

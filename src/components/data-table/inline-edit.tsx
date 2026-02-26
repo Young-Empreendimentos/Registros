@@ -183,7 +183,7 @@ export function UrlField({ value, onSave, onPreview, disabled, placeholder }: Ur
 
   if (editing) {
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 min-w-[280px]">
         <Input
           ref={inputRef}
           type="url"
@@ -193,15 +193,15 @@ export function UrlField({ value, onSave, onPreview, disabled, placeholder }: Ur
             if (e.key === 'Enter') handleSave();
             if (e.key === 'Escape') { setEditValue(value || ''); setEditing(false); }
           }}
-          className="h-7 text-xs"
-          placeholder="https://..."
+          className="h-8 text-sm flex-1"
+          placeholder="Cole a URL do documento aqui..."
           disabled={saving}
         />
-        <button onClick={handleSave} disabled={saving} className="text-emerald-500 hover:text-emerald-400">
-          <Check className="w-3.5 h-3.5" />
+        <button onClick={handleSave} disabled={saving} className="text-emerald-500 hover:text-emerald-400 p-1">
+          <Check className="w-4 h-4" />
         </button>
-        <button onClick={() => { setEditValue(value || ''); setEditing(false); }} className="text-zinc-500 hover:text-zinc-300">
-          <X className="w-3.5 h-3.5" />
+        <button onClick={() => { setEditValue(value || ''); setEditing(false); }} className="text-zinc-500 hover:text-zinc-300 p-1">
+          <X className="w-4 h-4" />
         </button>
       </div>
     );
