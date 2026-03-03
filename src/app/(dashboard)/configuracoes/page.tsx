@@ -31,6 +31,12 @@ import {
   Pencil,
   Trash2,
   KeyRound,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import type { UserRole } from '@/types';
 
@@ -41,6 +47,26 @@ interface UsuarioRow {
   role: UserRole;
   ativo: boolean;
   created_at: string;
+}
+
+interface SyncLog {
+  id: string;
+  started_at: string;
+  finished_at: string | null;
+  status: 'running' | 'success' | 'error';
+  registros_atualizados: number;
+  detalhes: {
+    enterprises_count?: number;
+    units_count?: number;
+    contracts_count?: number;
+    active_contracts?: number;
+    income_count?: number;
+    valores_atualizados?: number;
+    new_registros?: number;
+    error?: string;
+    contracts_error?: string;
+    income_error?: string;
+  } | null;
 }
 
 const roleLabels: Record<UserRole, string> = {
@@ -103,6 +129,10 @@ export default function ConfiguracoesPage() {
   const [deleteUser, setDeleteUser] = useState<UsuarioRow | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const [syncLogs, setSyncLogs] = useState<SyncLog[]>([]);
+  const [logsLoading, setLogsLoading] = useState(true);
+  const [expandedLog, setExpandedLog] = useState<string | null>(null);
+
   const { profile } = useProfile();
   const isGestor = profile?.role === 'gestor';
 
@@ -121,9 +151,27 @@ export default function ConfiguracoesPage() {
     }
   }, []);
 
+  const fetchSyncLogs = useCallback(async () => {
+    setLogsLoading(true);
+    try {
+      const res = await fetch('/api/sync-logs');
+      if (res.ok) {
+        const data = await res.json();
+        setSyncLogs(data.logs || []);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLogsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    if (isGestor) fetchUsers();
-  }, [fetchUsers, isGestor]);
+    if (isGestor) {
+      fetchUsers();
+      fetchSyncLogs();
+    }
+  }, [fetchUsers, fetchSyncLogs, isGestor]);
 
   const handleAdd = async () => {
     setAddError('');
@@ -285,6 +333,7 @@ export default function ConfiguracoesPage() {
     } finally {
       setSyncing(false);
       abortRef.current = null;
+      fetchSyncLogs();
     }
   };
 
@@ -336,7 +385,7 @@ export default function ConfiguracoesPage() {
         )}
 
         <div className="flex items-center gap-4">
-          <Button onClick={handleManualSync} disabled={syncing}>
+          <Button onClick={() => { handleManualSync(); }} disabled={syncing}>
             {syncing ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
@@ -355,6 +404,157 @@ export default function ConfiguracoesPage() {
             </span>
           )}
         </div>
+      </div>
+
+      {/* Sync History Section */}
+      <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <Clock className="w-5 h-5 text-orange-500" />
+          Histórico de Sincronizações
+        </h2>
+
+        {logsLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="w-6 h-6 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : syncLogs.length === 0 ? (
+          <p className="text-zinc-500 text-sm">Nenhuma sincronização registrada.</p>
+        ) : (
+          <div className="space-y-2">
+            {syncLogs.map((log) => {
+              const isExpanded = expandedLog === log.id;
+              const startDate = new Date(log.started_at);
+              const endDate = log.finished_at ? new Date(log.finished_at) : null;
+              const duration = endDate 
+                ? Math.round((endDate.getTime() - startDate.getTime()) / 1000)
+                : null;
+
+              return (
+                <div
+                  key={log.id}
+                  className="bg-zinc-800/50 rounded-lg border border-zinc-700/50 overflow-hidden"
+                >
+                  <button
+                    onClick={() => setExpandedLog(isExpanded ? null : log.id)}
+                    className="w-full px-4 py-3 flex items-center justify-between hover:bg-zinc-800/80 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      {log.status === 'success' && (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      )}
+                      {log.status === 'error' && (
+                        <XCircle className="w-5 h-5 text-red-500" />
+                      )}
+                      {log.status === 'running' && (
+                        <RefreshCw className="w-5 h-5 text-orange-500 animate-spin" />
+                      )}
+                      <div className="text-left">
+                        <p className="text-sm text-white">
+                          {startDate.toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </p>
+                        <p className="text-xs text-zinc-500">
+                          {log.status === 'success' && `${log.registros_atualizados} registros • ${duration}s`}
+                          {log.status === 'error' && 'Falhou'}
+                          {log.status === 'running' && 'Em andamento...'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {log.status === 'success' && (
+                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                          Sucesso
+                        </Badge>
+                      )}
+                      {log.status === 'error' && (
+                        <Badge variant="secondary" className="bg-red-500/10 text-red-400 border-red-500/20">
+                          Erro
+                        </Badge>
+                      )}
+                      {log.status === 'running' && (
+                        <Badge variant="secondary" className="bg-orange-500/10 text-orange-400 border-orange-500/20">
+                          Executando
+                        </Badge>
+                      )}
+                      {isExpanded ? (
+                        <ChevronUp className="w-4 h-4 text-zinc-500" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-zinc-500" />
+                      )}
+                    </div>
+                  </button>
+
+                  {isExpanded && log.detalhes && (
+                    <div className="px-4 pb-4 border-t border-zinc-700/50">
+                      <div className="pt-3 grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {log.detalhes.enterprises_count !== undefined && (
+                          <div className="bg-zinc-900/50 rounded-lg p-3">
+                            <p className="text-xs text-zinc-500">Empreendimentos</p>
+                            <p className="text-lg font-semibold text-white">{log.detalhes.enterprises_count}</p>
+                          </div>
+                        )}
+                        {log.detalhes.units_count !== undefined && (
+                          <div className="bg-zinc-900/50 rounded-lg p-3">
+                            <p className="text-xs text-zinc-500">Unidades</p>
+                            <p className="text-lg font-semibold text-white">{log.detalhes.units_count}</p>
+                          </div>
+                        )}
+                        {log.detalhes.contracts_count !== undefined && (
+                          <div className="bg-zinc-900/50 rounded-lg p-3">
+                            <p className="text-xs text-zinc-500">Contratos SIENGE</p>
+                            <p className="text-lg font-semibold text-white">{log.detalhes.contracts_count}</p>
+                          </div>
+                        )}
+                        {log.detalhes.active_contracts !== undefined && (
+                          <div className="bg-zinc-900/50 rounded-lg p-3">
+                            <p className="text-xs text-zinc-500">Contratos Ativos</p>
+                            <p className="text-lg font-semibold text-white">{log.detalhes.active_contracts}</p>
+                          </div>
+                        )}
+                        {log.detalhes.income_count !== undefined && (
+                          <div className="bg-zinc-900/50 rounded-lg p-3">
+                            <p className="text-xs text-zinc-500">Recebimentos</p>
+                            <p className="text-lg font-semibold text-white">{log.detalhes.income_count}</p>
+                          </div>
+                        )}
+                        {log.detalhes.valores_atualizados !== undefined && (
+                          <div className="bg-zinc-900/50 rounded-lg p-3">
+                            <p className="text-xs text-zinc-500">Valores Atualizados</p>
+                            <p className="text-lg font-semibold text-emerald-400">{log.detalhes.valores_atualizados}</p>
+                          </div>
+                        )}
+                        {log.detalhes.new_registros !== undefined && log.detalhes.new_registros > 0 && (
+                          <div className="bg-zinc-900/50 rounded-lg p-3">
+                            <p className="text-xs text-zinc-500">Novos Registros</p>
+                            <p className="text-lg font-semibold text-white">{log.detalhes.new_registros}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {(log.detalhes.error || log.detalhes.contracts_error || log.detalhes.income_error) && (
+                        <div className="mt-3 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+                            <div className="text-sm text-red-400">
+                              {log.detalhes.error && <p>{log.detalhes.error}</p>}
+                              {log.detalhes.contracts_error && <p>Contratos: {log.detalhes.contracts_error}</p>}
+                              {log.detalhes.income_error && <p>Recebimentos: {log.detalhes.income_error}</p>}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Users Section */}

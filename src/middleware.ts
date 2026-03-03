@@ -12,8 +12,12 @@ export async function middleware(request: NextRequest) {
 
   const isLoginPage = pathname === '/login';
   const isApiAuth = pathname.startsWith('/api/auth/');
+  const isApiSync = pathname === '/api/sync';
+  const isApiSyncLogs = pathname === '/api/sync-logs';
+  const isApiUpdateValores = pathname === '/api/update-valores';
+  const isApiUpdateContrato = pathname === '/api/update-contrato';
 
-  if (isApiAuth) {
+  if (isApiAuth || isApiSync || isApiSyncLogs || isApiUpdateValores || isApiUpdateContrato) {
     return NextResponse.next();
   }
 

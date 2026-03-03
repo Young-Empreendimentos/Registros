@@ -108,6 +108,36 @@ export interface SiengeCustomer {
   emails?: Array<{ email: string }>;
 }
 
+// Interfaces para bulk-data/income API
+export interface SiengeIncomeReceipt {
+  operationTypeId: number;
+  operationTypeName: string; // "Recebimento" ou "Reparcelamento"
+  grossAmount: number;
+  netAmount: number;
+  monetaryCorrectionAmount: number;
+  interestAmount: number;
+  fineAmount: number;
+  discountAmount: number;
+  paymentDate: string;
+  proRata: number;
+}
+
+export interface SiengeIncomeItem {
+  companyId: number;
+  clientId: number;
+  clientName: string;
+  billId: number;
+  installmentId: number;
+  documentNumber: string;
+  originalAmount: number;
+  mainUnit: string;
+  receipts: SiengeIncomeReceipt[];
+}
+
+export interface SiengeIncomeResponse {
+  data: SiengeIncomeItem[];
+}
+
 async function fetchAllPaginated<T>(
   path: string,
   extraParams?: Record<string, string>
@@ -150,7 +180,71 @@ export async function fetchCustomer(customerId: number): Promise<SiengeCustomer>
 }
 
 export function calculatePaidValue(contract: SiengeContract): number {
-  return contract.paymentConditions.reduce((sum, pc) => sum + (pc.amountPaid || 0), 0);
+  return contract.paymentConditions.reduce((sum, pc) => {
+    const totalValue = pc.totalValue || 0;
+    const outstandingBalance = pc.outstandingBalance || 0;
+    // Valor pago sem acréscimos = totalValue - outstandingBalance
+    // NOTA: Este método não considera reparcelamentos corretamente
+    // Use fetchIncomeByContract para obter o valor real pago
+    return sum + (totalValue - outstandingBalance);
+  }, 0);
+}
+
+// Busca recebimentos via bulk-data/income API
+// Esta API retorna o valor líquido real, excluindo reparcelamentos
+export async function fetchIncomeData(
+  startDate: string,
+  endDate: string,
+  companyId?: number
+): Promise<SiengeIncomeItem[]> {
+  const baseUrl = SIENGE_BASE_URL.replace('/public/api/v1', '/public/api/bulk-data/v1');
+  
+  let url = `${baseUrl}/income?startDate=${startDate}&endDate=${endDate}&selectionType=P`;
+  if (companyId) {
+    url += `&companyId=${companyId}`;
+  }
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': getAuthHeader(),
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`SIENGE bulk-data API error ${response.status}: ${text}`);
+  }
+
+  const data: SiengeIncomeResponse = await response.json();
+  return data.data || [];
+}
+
+// Calcula o valor pago real de um contrato baseado nos recebimentos
+// Ignora reparcelamentos e considera apenas recebimentos reais
+export function calculateRealPaidValue(
+  incomeItems: SiengeIncomeItem[],
+  billId: number
+): { valorPagoSemAcrescimos: number; valorLiquido: number } {
+  const contractItems = incomeItems.filter(item => item.billId === billId);
+  
+  let valorPagoSemAcrescimos = 0;
+  let valorLiquido = 0;
+  
+  for (const item of contractItems) {
+    if (item.receipts && item.receipts.length > 0) {
+      const receipt = item.receipts[0];
+      
+      // Ignorar reparcelamentos - apenas considerar recebimentos reais
+      if (receipt.operationTypeName === 'Recebimento') {
+        valorPagoSemAcrescimos += item.originalAmount || 0;
+        valorLiquido += receipt.netAmount || 0;
+      }
+    }
+  }
+  
+  return { valorPagoSemAcrescimos, valorLiquido };
 }
 
 export function getMainCustomer(contract: SiengeContract): SiengeContractCustomer | undefined {

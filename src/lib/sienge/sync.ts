@@ -4,10 +4,11 @@ import {
   fetchUnits,
   fetchSalesContracts,
   fetchCustomer,
-  calculatePaidValue,
+  fetchIncomeData,
   getMainCustomer,
   getMainUnitId,
   type SiengeContract,
+  type SiengeIncomeItem,
 } from './client';
 import { calcularGatilho, isGatilhoAtingido } from '@/lib/calculations';
 
@@ -18,11 +19,49 @@ import { calcularGatilho, isGatilhoAtingido } from '@/lib/calculations';
 // 2004 - Ilha dos Açores
 // 2005 - Aurora
 // 2007 - Parque Lorena l
-// 2009 - Parque Lorena ll
+// 2009 - Parque Lorena II
 // 2010 - Erico Verissimo
 // 2011 - Algarve
 // 2014 - Morada da Coxilha
 const ALLOWED_ENTERPRISE_IDS = new Set([1, 2, 2003, 2004, 2005, 2007, 2009, 2010, 2011, 2014]);
+
+// Mapeamento enterpriseId -> companyId (para busca de recebimentos)
+const ENTERPRISE_COMPANY_MAP: Record<number, number> = {
+  1: 1,     // Parque da Guarda Residence
+  2: 1,     // Jardim do Parque
+  2003: 3,  // Montecarlo
+  2004: 4,  // Ilha dos Açores
+  2005: 5,  // Aurora
+  2007: 7,  // Parque Lorena I
+  2009: 9,  // Parque Lorena II
+  2010: 10, // Erico Verissimo
+  2011: 11, // Algarve
+  2014: 14, // Morada da Coxilha
+};
+
+// Calcula valor pago real baseado nos recebimentos (ignora reparcelamentos)
+function calculateRealPaidValue(
+  incomeItems: SiengeIncomeItem[],
+  companyId: number,
+  unitNumber: string
+): number {
+  const contractItems = incomeItems.filter(
+    item => item.companyId === companyId && item.documentNumber === unitNumber
+  );
+  
+  let valorLiquido = 0;
+  
+  for (const item of contractItems) {
+    if (item.receipts && item.receipts.length > 0) {
+      const receipt = item.receipts[0];
+      if (receipt.operationTypeName === 'Recebimento') {
+        valorLiquido += receipt.netAmount || 0;
+      }
+    }
+  }
+  
+  return valorLiquido;
+}
 
 export type ProgressCallback = (event: {
   step: string;
@@ -104,10 +143,34 @@ export async function runSync(
       if (!empRow) continue;
 
       for (const unit of units) {
+        // Extrair apenas o número do lote (remove prefixos como "Lote", "lote", etc.)
+        let numeroLote = unit.name;
+        
+        // Se contém "Lote" seguido de número, extrai só o número
+        const loteMatch = numeroLote.match(/[Ll]ote\s*(\d+)/);
+        if (loteMatch) {
+          numeroLote = loteMatch[1];
+        } else {
+          // Se é apenas um número, mantém
+          const onlyNumber = numeroLote.match(/^(\d+)$/);
+          if (onlyNumber) {
+            numeroLote = onlyNumber[1];
+          } else {
+            // Se não é um lote válido (ex: "The Ecko 38"), pula
+            const hasNumber = numeroLote.match(/\d+/);
+            if (!hasNumber || numeroLote.match(/[A-Za-z]{2,}/)) {
+              // Contém texto que não é "Lote" - provavelmente não é um lote válido
+              continue;
+            }
+            // Extrai o número se houver
+            numeroLote = hasNumber[0];
+          }
+        }
+        
         await supabase.from('lotes').upsert(
           {
             sienge_unit_id: unit.id,
-            numero: unit.name,
+            numero: numeroLote,
             empreendimento_id: empRow.id,
             valor_avista: unit.terrainValue || 0,
           },
@@ -148,6 +211,19 @@ export async function runSync(
     const activeContracts = Array.from(activeContractsByUnit.entries());
     details.active_contracts = activeContracts.length;
     progress('processando', `Processando ${activeContracts.length} contratos ativos...`, 45);
+
+    // Buscar todos os recebimentos via bulk-data/income
+    progress('recebimentos', 'Carregando recebimentos do SIENGE (bulk-data)...', 46);
+    let allIncomeData: SiengeIncomeItem[] = [];
+    try {
+      const startDate = '2020-01-01';
+      const endDate = new Date().toISOString().split('T')[0];
+      allIncomeData = await fetchIncomeData(startDate, endDate);
+      details.income_count = allIncomeData.length;
+    } catch (err) {
+      details.income_error = err instanceof Error ? err.message : 'Erro ao buscar recebimentos';
+    }
+    progress('recebimentos', `${allIncomeData.length} recebimentos carregados`, 48);
 
     // Pre-load existing emails from DB to avoid redundant API calls
     const { data: existingContratos } = await supabase
@@ -205,7 +281,13 @@ export async function runSync(
       if (!mainCustomer) continue;
 
       const clienteEmail = customerEmailMap.get(mainCustomer.id) || '';
-      const paidValue = calculatePaidValue(contract);
+      
+      // Calcular valor pago usando recebimentos reais (ignora reparcelamentos)
+      const companyId = ENTERPRISE_COMPANY_MAP[contract.enterpriseId] || contract.companyId;
+      const unitNumber = contract.number;
+      const paidValue = allIncomeData.length > 0 
+        ? calculateRealPaidValue(allIncomeData, companyId, unitNumber)
+        : 0;
 
       const { data: loteRow } = await supabase
         .from('lotes')
@@ -285,6 +367,50 @@ export async function runSync(
         });
       }
       details.new_registros = lotesWithoutRegistro.length;
+    }
+
+    // 7. Atualizar valores pagos de TODOS os contratos existentes usando bulk-data/income
+    // Isso garante que mesmo contratos que não vieram na busca de sales-contracts sejam atualizados
+    if (allIncomeData.length > 0) {
+      progress('valores', 'Atualizando valores pagos de todos os contratos...', 97);
+      
+      const { data: todosContratos } = await supabase
+        .from('contratos')
+        .select('id, sienge_contract_id, valor_ja_pago, lotes(numero, empreendimentos(sienge_id))')
+        .eq('ativo', true);
+
+      let valoresAtualizados = 0;
+      
+      if (todosContratos) {
+        for (const contrato of todosContratos) {
+          const lote = contrato.lotes as { numero: string; empreendimentos: { sienge_id: number } } | null;
+          if (!lote?.empreendimentos?.sienge_id) continue;
+          
+          const enterpriseId = lote.empreendimentos.sienge_id;
+          const companyId = ENTERPRISE_COMPANY_MAP[enterpriseId];
+          const unitNumber = lote.numero;
+          
+          if (!companyId || !unitNumber) continue;
+          
+          const valorCalculado = calculateRealPaidValue(allIncomeData, companyId, unitNumber);
+          const valorAtual = contrato.valor_ja_pago || 0;
+          
+          // Só atualiza se houver diferença significativa
+          if (Math.abs(valorCalculado - valorAtual) > 0.01) {
+            await supabase
+              .from('contratos')
+              .update({ 
+                valor_ja_pago: valorCalculado,
+                ultima_atualizacao_valor: new Date().toISOString()
+              })
+              .eq('id', contrato.id);
+            valoresAtualizados++;
+          }
+        }
+      }
+      
+      details.valores_atualizados = valoresAtualizados;
+      progress('valores', `${valoresAtualizados} valores de contratos atualizados`, 99);
     }
 
     // Update log
