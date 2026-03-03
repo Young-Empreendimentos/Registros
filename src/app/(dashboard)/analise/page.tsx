@@ -8,23 +8,16 @@ import { MultiSelect } from '@/components/ui/multi-select';
 import { EtapaBadge } from '@/components/data-table/etapa-badge';
 import { InlineTextEdit } from '@/components/data-table/inline-edit';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
 import {
   Search,
   X,
   ArrowUpDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   BarChart3,
 } from 'lucide-react';
 import type { Etapa } from '@/types';
 
 type SortField = 'lote' | 'empreendimento' | 'cliente' | 'dias' | 'etapa';
 type SortDir = 'asc' | 'desc';
-
-const PAGE_SIZE = 50;
 
 const ETAPAS_EM_ANDAMENTO: Etapa[] = [
   'Com pendências',
@@ -57,7 +50,6 @@ export default function AnalisePage() {
   const [empFilters, setEmpFilters] = useState<string[]>([]);
   const [sortField, setSortField] = useState<SortField>('dias');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
-  const [page, setPage] = useState(0);
 
   const canEdit = profile?.role !== 'leitor';
 
@@ -119,19 +111,6 @@ export default function AnalisePage() {
     return data;
   }, [emAndamento, searchTerm, etapaFilters, empFilters, sortField, sortDir]);
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paged = useMemo(() => {
-    const start = page * PAGE_SIZE;
-    return filtered.slice(start, start + PAGE_SIZE);
-  }, [filtered, page]);
-
-  const safeSetPage = (p: number) => setPage(Math.max(0, Math.min(p, totalPages - 1)));
-
-  useMemo(() => {
-    if (page >= totalPages && totalPages > 0) setPage(totalPages - 1);
-    if (page > 0 && filtered.length === 0) setPage(0);
-  }, [filtered.length, totalPages, page]);
-
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
@@ -139,12 +118,10 @@ export default function AnalisePage() {
       setSortField(field);
       setSortDir('asc');
     }
-    setPage(0);
   };
 
   const handleMultiFilterChange = (setter: (v: string[]) => void) => (v: string[]) => {
     setter(v);
-    setPage(0);
   };
 
   const SortHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
@@ -200,12 +177,12 @@ export default function AnalisePage() {
           <Input
             placeholder="Buscar lote, cliente, empreendimento..."
             value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setPage(0); }}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
           />
           {searchTerm && (
             <button
-              onClick={() => { setSearchTerm(''); setPage(0); }}
+              onClick={() => setSearchTerm('')}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
             >
               <X className="w-4 h-4" />
@@ -262,7 +239,7 @@ export default function AnalisePage() {
                 </tr>
               </thead>
               <tbody>
-                {paged.map((item) => (
+                {filtered.map((item) => (
                   <tr
                     key={item.registro.id}
                     className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors"
@@ -305,7 +282,7 @@ export default function AnalisePage() {
                   </tr>
                 ))}
 
-                {paged.length === 0 && (
+                {filtered.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-4 py-12 text-center text-zinc-600">
                       Nenhum registro em andamento encontrado
@@ -317,32 +294,6 @@ export default function AnalisePage() {
           </div>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-zinc-800 bg-zinc-900/80">
-            <span className="text-xs text-zinc-500">
-              {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} de {filtered.length}
-            </span>
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => safeSetPage(0)} disabled={page === 0}>
-                <ChevronsLeft className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => safeSetPage(page - 1)} disabled={page === 0}>
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <span className="text-xs text-zinc-400 px-3">
-                Página {page + 1} de {totalPages}
-              </span>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => safeSetPage(page + 1)} disabled={page >= totalPages - 1}>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => safeSetPage(totalPages - 1)} disabled={page >= totalPages - 1}>
-                <ChevronsRight className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

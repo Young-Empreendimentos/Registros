@@ -72,7 +72,7 @@ export function calcularEtapa(
     return 'Aguardando conclusão de registro';
   }
 
-  if (gatilhoAtingido && !registro.data_solicitacao_itbi && registro.data_gatilho) {
+  if (gatilhoAtingido && !registro.data_solicitacao_itbi) {
     return 'Solicitar ITBI';
   }
 
@@ -96,7 +96,8 @@ export function calcularEtapa(
     return 'Gatilho atingido';
   }
 
-  if (contrato && contrato.valor_ja_pago > 0) {
+  // Se tem contrato ativo, é vendido (mesmo que valor_ja_pago seja 0)
+  if (contrato && contrato.ativo) {
     return 'Vendido';
   }
 

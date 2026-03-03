@@ -12,7 +12,7 @@ import type { Empreendimento, Lote, Contrato, Registro } from '@/types';
 // 2004 - Ilha dos Açores
 // 2005 - Aurora
 // 2007 - Parque Lorena l
-// 2009 - Parque Lorena ll
+// 2009 - Parque Lorena II
 // 2010 - Erico Verissimo
 // 2011 - Algarve
 // 2014 - Morada da Coxilha
