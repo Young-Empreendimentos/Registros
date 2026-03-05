@@ -110,6 +110,7 @@ async function fetchContractDetails(contractId: number): Promise<SiengeContract 
 
 // Calcula valor pago real de um contrato (ignora reparcelamentos)
 // Usando companyId + documentNumber (que é o número da unidade/lote)
+// Usa originalAmount para obter valor SEM acréscimos (juros, multa, correção)
 function calculateRealPaidValue(
   incomeItems: IncomeItem[],
   companyId: number,
@@ -120,20 +121,21 @@ function calculateRealPaidValue(
     item => item.companyId === companyId && item.documentNumber === unitNumber
   );
   
-  let valorLiquido = 0;
+  let valorPago = 0;
   
   for (const item of contractItems) {
     if (item.receipts && item.receipts.length > 0) {
       const receipt = item.receipts[0];
       
       // Ignorar reparcelamentos - apenas considerar recebimentos reais
+      // Usa originalAmount para valor sem acréscimos
       if (receipt.operationTypeName === 'Recebimento') {
-        valorLiquido += receipt.netAmount || 0;
+        valorPago += item.originalAmount || 0;
       }
     }
   }
   
-  return valorLiquido;
+  return valorPago;
 }
 
 function sleep(ms: number): Promise<void> {

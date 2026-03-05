@@ -40,6 +40,7 @@ const ENTERPRISE_COMPANY_MAP: Record<number, number> = {
 };
 
 // Calcula valor pago real baseado nos recebimentos (ignora reparcelamentos)
+// Usa originalAmount para obter valor SEM acréscimos (juros, multa, correção)
 function calculateRealPaidValue(
   incomeItems: SiengeIncomeItem[],
   companyId: number,
@@ -49,18 +50,19 @@ function calculateRealPaidValue(
     item => item.companyId === companyId && item.documentNumber === unitNumber
   );
   
-  let valorLiquido = 0;
+  let valorPago = 0;
   
   for (const item of contractItems) {
     if (item.receipts && item.receipts.length > 0) {
       const receipt = item.receipts[0];
       if (receipt.operationTypeName === 'Recebimento') {
-        valorLiquido += receipt.netAmount || 0;
+        // Usa originalAmount para valor sem acréscimos
+        valorPago += item.originalAmount || 0;
       }
     }
   }
   
-  return valorLiquido;
+  return valorPago;
 }
 
 export type ProgressCallback = (event: {

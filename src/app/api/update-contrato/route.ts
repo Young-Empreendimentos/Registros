@@ -73,12 +73,13 @@ export async function POST(request: NextRequest) {
       item => item.companyId === company_id && item.documentNumber === unit_number
     );
 
-    let valorLiquido = 0;
+    // Usa originalAmount para valor SEM acréscimos (juros, multa, correção)
+    let valorPago = 0;
     for (const item of contractItems) {
       if (item.receipts && item.receipts.length > 0) {
         const receipt = item.receipts[0];
         if (receipt.operationTypeName === 'Recebimento') {
-          valorLiquido += receipt.netAmount || 0;
+          valorPago += item.originalAmount || 0;
         }
       }
     }
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
     // Atualizar no banco
     const { data: updated, error } = await supabase
       .from('contratos')
-      .update({ valor_ja_pago: valorLiquido })
+      .update({ valor_ja_pago: valorPago })
       .eq('sienge_contract_id', sienge_contract_id)
       .select()
       .single();
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
       company_id,
       unit_number,
       recebimentos_encontrados: contractItems.length,
-      valor_liquido_calculado: valorLiquido,
+      valor_pago_sem_acrescimos: valorPago,
       contrato_atualizado: updated,
     });
   } catch (error) {
