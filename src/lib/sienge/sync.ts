@@ -40,7 +40,7 @@ const ENTERPRISE_COMPANY_MAP: Record<number, number> = {
 };
 
 // Calcula valor pago real baseado nos recebimentos (ignora reparcelamentos)
-// Usa originalAmount para obter valor SEM acréscimos (juros, multa, correção)
+// Usa grossAmount (Vl. Baixa do relatório SIENGE) somando TODOS os receipts de cada parcela
 function calculateRealPaidValue(
   incomeItems: SiengeIncomeItem[],
   companyId: number,
@@ -54,10 +54,12 @@ function calculateRealPaidValue(
   
   for (const item of contractItems) {
     if (item.receipts && item.receipts.length > 0) {
-      const receipt = item.receipts[0];
-      if (receipt.operationTypeName === 'Recebimento') {
-        // Usa originalAmount para valor sem acréscimos
-        valorPago += item.originalAmount || 0;
+      // Soma TODOS os receipts da parcela (pode haver múltiplos recebimentos)
+      for (const receipt of item.receipts) {
+        if (receipt.operationTypeName === 'Recebimento') {
+          // Usa grossAmount = Vl. Baixa do relatório de contas recebidas
+          valorPago += receipt.grossAmount || 0;
+        }
       }
     }
   }

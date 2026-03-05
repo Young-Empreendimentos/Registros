@@ -12,6 +12,7 @@ function getAuthHeader(): string {
 
 interface IncomeReceipt {
   operationTypeName: string;
+  grossAmount: number;
   netAmount: number;
 }
 
@@ -110,7 +111,7 @@ async function fetchContractDetails(contractId: number): Promise<SiengeContract 
 
 // Calcula valor pago real de um contrato (ignora reparcelamentos)
 // Usando companyId + documentNumber (que é o número da unidade/lote)
-// Usa originalAmount para obter valor SEM acréscimos (juros, multa, correção)
+// Usa grossAmount (Vl. Baixa) somando TODOS os receipts de cada parcela
 function calculateRealPaidValue(
   incomeItems: IncomeItem[],
   companyId: number,
@@ -125,12 +126,12 @@ function calculateRealPaidValue(
   
   for (const item of contractItems) {
     if (item.receipts && item.receipts.length > 0) {
-      const receipt = item.receipts[0];
-      
-      // Ignorar reparcelamentos - apenas considerar recebimentos reais
-      // Usa originalAmount para valor sem acréscimos
-      if (receipt.operationTypeName === 'Recebimento') {
-        valorPago += item.originalAmount || 0;
+      // Soma TODOS os receipts da parcela (pode haver múltiplos recebimentos)
+      for (const receipt of item.receipts) {
+        if (receipt.operationTypeName === 'Recebimento') {
+          // Usa grossAmount = Vl. Baixa do relatório de contas recebidas
+          valorPago += receipt.grossAmount || 0;
+        }
       }
     }
   }

@@ -222,29 +222,29 @@ export async function fetchIncomeData(
 }
 
 // Calcula o valor pago real de um contrato baseado nos recebimentos
-// Ignora reparcelamentos e considera apenas recebimentos reais
+// Usa grossAmount (Vl. Baixa do relatório SIENGE) somando TODOS os receipts
 export function calculateRealPaidValue(
   incomeItems: SiengeIncomeItem[],
   billId: number
-): { valorPagoSemAcrescimos: number; valorLiquido: number } {
+): { valorBaixa: number; valorLiquido: number } {
   const contractItems = incomeItems.filter(item => item.billId === billId);
   
-  let valorPagoSemAcrescimos = 0;
+  let valorBaixa = 0;
   let valorLiquido = 0;
   
   for (const item of contractItems) {
     if (item.receipts && item.receipts.length > 0) {
-      const receipt = item.receipts[0];
-      
-      // Ignorar reparcelamentos - apenas considerar recebimentos reais
-      if (receipt.operationTypeName === 'Recebimento') {
-        valorPagoSemAcrescimos += item.originalAmount || 0;
-        valorLiquido += receipt.netAmount || 0;
+      // Soma TODOS os receipts da parcela (pode haver múltiplos recebimentos)
+      for (const receipt of item.receipts) {
+        if (receipt.operationTypeName === 'Recebimento') {
+          valorBaixa += receipt.grossAmount || 0;
+          valorLiquido += receipt.netAmount || 0;
+        }
       }
     }
   }
   
-  return { valorPagoSemAcrescimos, valorLiquido };
+  return { valorBaixa, valorLiquido };
 }
 
 export function getMainCustomer(contract: SiengeContract): SiengeContractCustomer | undefined {

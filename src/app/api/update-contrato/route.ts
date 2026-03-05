@@ -12,12 +12,14 @@ function getAuthHeader(): string {
 
 interface IncomeReceipt {
   operationTypeName: string;
+  grossAmount: number;
   netAmount: number;
 }
 
 interface IncomeItem {
   companyId: number;
   documentNumber: string;
+  originalAmount: number;
   receipts: IncomeReceipt[];
 }
 
@@ -73,13 +75,15 @@ export async function POST(request: NextRequest) {
       item => item.companyId === company_id && item.documentNumber === unit_number
     );
 
-    // Usa originalAmount para valor SEM acréscimos (juros, multa, correção)
+    // Usa grossAmount (Vl. Baixa) somando TODOS os receipts de cada parcela
     let valorPago = 0;
     for (const item of contractItems) {
       if (item.receipts && item.receipts.length > 0) {
-        const receipt = item.receipts[0];
-        if (receipt.operationTypeName === 'Recebimento') {
-          valorPago += item.originalAmount || 0;
+        // Soma TODOS os receipts da parcela (pode haver múltiplos recebimentos)
+        for (const receipt of item.receipts) {
+          if (receipt.operationTypeName === 'Recebimento') {
+            valorPago += receipt.grossAmount || 0;
+          }
         }
       }
     }
@@ -102,7 +106,7 @@ export async function POST(request: NextRequest) {
       company_id,
       unit_number,
       recebimentos_encontrados: contractItems.length,
-      valor_pago_sem_acrescimos: valorPago,
+      valor_baixa: valorPago,
       contrato_atualizado: updated,
     });
   } catch (error) {
