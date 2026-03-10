@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Check, X, Pencil, ExternalLink } from 'lucide-react';
+// Check e X ainda são usados no UrlField
 import { cn } from '@/lib/utils';
 
 interface InlineTextEditProps {
@@ -25,6 +26,11 @@ export function InlineTextEdit({ value, onSave, disabled, type = 'text', placeho
   }, [editing]);
 
   const handleSave = async () => {
+    if (saving) return;
+    if (editValue === (value || '')) {
+      setEditing(false);
+      return;
+    }
     setSaving(true);
     try {
       await onSave(editValue);
@@ -34,11 +40,6 @@ export function InlineTextEdit({ value, onSave, disabled, type = 'text', placeho
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleCancel = () => {
-    setEditValue(value || '');
-    setEditing(false);
   };
 
   if (disabled) {
@@ -63,26 +64,25 @@ export function InlineTextEdit({ value, onSave, disabled, type = 'text', placeho
   }
 
   return (
-    <div className="flex items-center gap-1">
-      <Input
-        ref={inputRef}
-        type={type}
-        value={editValue}
-        onChange={(e) => setEditValue(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') handleSave();
-          if (e.key === 'Escape') handleCancel();
-        }}
-        className="h-7 text-xs"
-        disabled={saving}
-      />
-      <button onClick={handleSave} disabled={saving} className="text-emerald-500 hover:text-emerald-400">
-        <Check className="w-3.5 h-3.5" />
-      </button>
-      <button onClick={handleCancel} className="text-zinc-500 hover:text-zinc-300">
-        <X className="w-3.5 h-3.5" />
-      </button>
-    </div>
+    <Input
+      ref={inputRef}
+      type={type}
+      value={editValue}
+      onChange={(e) => setEditValue(e.target.value)}
+      onBlur={handleSave}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.currentTarget.blur();
+        }
+        if (e.key === 'Escape') {
+          setEditValue(value || '');
+          setEditing(false);
+        }
+      }}
+      className="h-7 text-xs"
+      disabled={saving}
+      placeholder={placeholder}
+    />
   );
 }
 

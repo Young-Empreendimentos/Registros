@@ -24,6 +24,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Logo } from '@/components/logo';
+import { useSidebar } from '@/contexts/sidebar-context';
 
 const navItems = [
   { href: '/registros', icon: FileText, label: 'Registros' },
@@ -40,7 +41,7 @@ interface SidebarProps {
 export function Sidebar({ profile }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [collapsed, setCollapsed] = useState(false);
+  const { collapsed, toggle } = useSidebar();
   const [empreendimentos, setEmpreendimentos] = useState<Empreendimento[]>([]);
   const [empExpanded, setEmpExpanded] = useState(false);
 
@@ -204,7 +205,7 @@ export function Sidebar({ profile }: SidebarProps) {
 
         {/* Collapse toggle */}
         <button
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={toggle}
           className="absolute -right-3 top-20 w-6 h-6 bg-zinc-800 border border-zinc-700 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all duration-200"
         >
           {collapsed ? (

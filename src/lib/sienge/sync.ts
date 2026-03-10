@@ -314,6 +314,7 @@ export async function runSync(
             data_contrato: contract.contractDate,
             ultima_atualizacao_valor: new Date().toISOString(),
             ativo: true,
+            numero_contrato: contract.number,
           },
           { onConflict: 'sienge_contract_id' }
         )
@@ -380,7 +381,7 @@ export async function runSync(
       
       const { data: todosContratos } = await supabase
         .from('contratos')
-        .select('id, sienge_contract_id, valor_ja_pago, lotes(numero, empreendimentos(sienge_id))')
+        .select('id, sienge_contract_id, valor_ja_pago, numero_contrato, lotes(numero, empreendimentos(sienge_id))')
         .eq('ativo', true);
 
       let valoresAtualizados = 0;
@@ -392,11 +393,12 @@ export async function runSync(
           
           const enterpriseId = lote.empreendimentos.sienge_id;
           const companyId = ENTERPRISE_COMPANY_MAP[enterpriseId];
-          const unitNumber = lote.numero;
+          // Usa numero_contrato (ex: "221B") se disponível, senão usa numero do lote (ex: "221")
+          const documentNumber = (contrato as { numero_contrato?: string }).numero_contrato || lote.numero;
           
-          if (!companyId || !unitNumber) continue;
+          if (!companyId || !documentNumber) continue;
           
-          const valorCalculado = calculateRealPaidValue(allIncomeData, companyId, unitNumber);
+          const valorCalculado = calculateRealPaidValue(allIncomeData, companyId, documentNumber);
           const valorAtual = contrato.valor_ja_pago || 0;
           
           // Só atualiza se houver diferença significativa

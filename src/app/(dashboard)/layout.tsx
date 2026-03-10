@@ -2,13 +2,12 @@
 
 import { Sidebar } from '@/components/sidebar';
 import { useProfile } from '@/hooks/use-profile';
+import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
+import { cn } from '@/lib/utils';
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function DashboardContent({ children }: { children: React.ReactNode }) {
   const { profile, loading } = useProfile();
+  const { collapsed } = useSidebar();
 
   if (loading) {
     return (
@@ -24,11 +23,26 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
       <Sidebar profile={profile} />
-      <main className="pl-60 transition-all duration-300">
+      <main className={cn(
+        'transition-all duration-300',
+        collapsed ? 'pl-16' : 'pl-60'
+      )}>
         <div className="p-6">
           {children}
         </div>
       </main>
     </div>
+  );
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <SidebarProvider>
+      <DashboardContent>{children}</DashboardContent>
+    </SidebarProvider>
   );
 }
