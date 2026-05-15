@@ -43,7 +43,7 @@ export function InlineTextEdit({ value, onSave, disabled, type = 'text', placeho
   };
 
   if (disabled) {
-    return <span className="text-zinc-400 text-sm">{value || '-'}</span>;
+    return <span className="text-gray-500 text-[11px]">{value || '-'}</span>;
   }
 
   if (!editing) {
@@ -53,12 +53,12 @@ export function InlineTextEdit({ value, onSave, disabled, type = 'text', placeho
           setEditValue(value || '');
           setEditing(true);
         }}
-        className="group flex items-center gap-1 text-sm text-zinc-300 hover:text-white transition-colors w-full text-left min-h-[28px]"
+        className="group flex items-center gap-0.5 text-[11px] text-gray-700 hover:text-gray-900 transition-colors w-full text-left min-h-[22px]"
       >
-        <span className={cn('truncate', !value && 'text-zinc-600')}>
+        <span className={cn('truncate', !value && 'text-gray-400')}>
           {value || placeholder || '-'}
         </span>
-        <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-100 shrink-0 text-zinc-500" />
+        <Pencil className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 shrink-0 text-gray-400" />
       </button>
     );
   }
@@ -79,7 +79,7 @@ export function InlineTextEdit({ value, onSave, disabled, type = 'text', placeho
           setEditing(false);
         }
       }}
-      className="h-7 text-xs"
+      className="h-6 text-[11px]"
       disabled={saving}
       placeholder={placeholder}
     />
@@ -106,13 +106,14 @@ export function InlineCheckbox({ checked, onToggle, disabled, label }: InlineChe
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1">
       <Checkbox
         checked={checked}
         onCheckedChange={handleToggle}
         disabled={disabled || saving}
+        className="h-3.5 w-3.5"
       />
-      {label && <span className="text-xs text-zinc-400">{label}</span>}
+      {label && <span className="text-[10px] text-gray-500">{label}</span>}
     </div>
   );
 }
@@ -146,7 +147,7 @@ export function UrlField({ value, onSave, onPreview, disabled, placeholder }: Ur
   };
 
   if (disabled && !value) {
-    return <span className="text-zinc-600 text-sm">-</span>;
+    return <span className="text-gray-400 text-[11px]">-</span>;
   }
 
   if (value && !editing) {
@@ -154,16 +155,16 @@ export function UrlField({ value, onSave, onPreview, disabled, placeholder }: Ur
       <div className="flex items-center gap-1">
         <button
           onClick={onPreview}
-          className="text-orange-500 hover:text-orange-400 text-xs underline underline-offset-2 truncate max-w-[120px]"
+          className="text-blue-600 hover:text-blue-700 text-[10px] underline underline-offset-2 truncate max-w-[80px]"
         >
-          Ver documento
+          Ver doc
         </button>
         <a href={value} target="_blank" rel="noopener noreferrer">
-          <ExternalLink className="w-3 h-3 text-zinc-500 hover:text-zinc-300" />
+          <ExternalLink className="w-2.5 h-2.5 text-gray-400 hover:text-gray-600" />
         </a>
         {!disabled && (
           <button onClick={() => { setEditValue(value); setEditing(true); }}>
-            <Pencil className="w-3 h-3 text-zinc-600 hover:text-zinc-400" />
+            <Pencil className="w-2.5 h-2.5 text-gray-400 hover:text-gray-600" />
           </button>
         )}
       </div>
@@ -174,16 +175,16 @@ export function UrlField({ value, onSave, onPreview, disabled, placeholder }: Ur
     return (
       <button
         onClick={() => setEditing(true)}
-        className="text-xs text-zinc-600 hover:text-zinc-400"
+        className="text-[10px] text-gray-400 hover:text-gray-600"
       >
-        {placeholder || '+ Adicionar URL'}
+        {placeholder || '+ URL'}
       </button>
     );
   }
 
   if (editing) {
     return (
-      <div className="flex items-center gap-1 min-w-[280px]">
+      <div className="flex items-center gap-0.5 min-w-[220px]">
         <Input
           ref={inputRef}
           type="url"
@@ -193,15 +194,15 @@ export function UrlField({ value, onSave, onPreview, disabled, placeholder }: Ur
             if (e.key === 'Enter') handleSave();
             if (e.key === 'Escape') { setEditValue(value || ''); setEditing(false); }
           }}
-          className="h-8 text-sm flex-1"
-          placeholder="Cole a URL do documento aqui..."
+          className="h-6 text-[11px] flex-1"
+          placeholder="Cole a URL..."
           disabled={saving}
         />
-        <button onClick={handleSave} disabled={saving} className="text-emerald-500 hover:text-emerald-400 p-1">
-          <Check className="w-4 h-4" />
+        <button onClick={handleSave} disabled={saving} className="text-green-600 hover:text-green-700 p-0.5">
+          <Check className="w-3 h-3" />
         </button>
-        <button onClick={() => { setEditValue(value || ''); setEditing(false); }} className="text-zinc-500 hover:text-zinc-300 p-1">
-          <X className="w-4 h-4" />
+        <button onClick={() => { setEditValue(value || ''); setEditing(false); }} className="text-gray-400 hover:text-gray-600 p-0.5">
+          <X className="w-3 h-3" />
         </button>
       </div>
     );

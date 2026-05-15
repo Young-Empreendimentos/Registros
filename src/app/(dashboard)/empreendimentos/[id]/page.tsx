@@ -33,7 +33,7 @@ export default function EmpreendimentoPage() {
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-4">
           <div className="w-8 h-8 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-zinc-500 text-sm">Carregando registros...</p>
+          <p className="text-orange-700 text-sm">Carregando registros...</p>
         </div>
       </div>
     );
@@ -56,7 +56,7 @@ export default function EmpreendimentoPage() {
   return (
     <div className="space-y-6">
       <div>
-        <div className="flex items-center gap-2 text-sm text-zinc-500 mb-3">
+        <div className="flex items-center gap-2 text-sm text-orange-700 mb-3">
           <Link href="/registros" className="hover:text-orange-400 transition-colors">
             Registros
           </Link>
@@ -66,8 +66,8 @@ export default function EmpreendimentoPage() {
         <div className="flex items-center gap-3">
           <Building2 className="w-6 h-6 text-orange-500" />
           <div>
-            <h1 className="text-2xl font-bold text-white">{empNome || 'Empreendimento'}</h1>
-            <p className="text-zinc-500 text-sm">
+            <h1 className="text-2xl font-bold text-orange-900">{empNome || 'Empreendimento'}</h1>
+            <p className="text-orange-700 text-sm">
               {empRegistros.length} lote(s) total — {activeCount} em andamento — {concluidos} concluído(s)
             </p>
           </div>
@@ -76,13 +76,13 @@ export default function EmpreendimentoPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: 'Total de Lotes', value: empRegistros.length, color: 'text-white' },
+          { label: 'Total de Lotes', value: empRegistros.length, color: 'text-orange-900' },
           { label: 'Em Andamento', value: activeCount, color: 'text-orange-400' },
           { label: 'Concluídos', value: concluidos, color: 'text-emerald-400' },
           { label: 'Pendências', value: empRegistros.filter((r) => r.etapa === 'Com pendências').length, color: 'text-red-400' },
         ].map(({ label, value, color }) => (
           <div key={label} className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4">
-            <p className="text-zinc-500 text-xs mb-1">{label}</p>
+            <p className="text-orange-700 text-xs mb-1">{label}</p>
             <p className={`text-2xl font-bold ${color}`}>{value}</p>
           </div>
         ))}

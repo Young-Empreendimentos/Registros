@@ -11,21 +11,21 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center">
+      <div className="min-h-screen bg-orange-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-zinc-500 text-sm">Carregando...</p>
+          <div className="w-8 h-8 border-2 border-[#FE5009] border-t-transparent rounded-full animate-spin" />
+          <p className="text-orange-800 text-sm">Carregando...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f]">
+    <div className="min-h-screen bg-orange-50">
       <Sidebar profile={profile} />
       <main className={cn(
         'transition-all duration-300',
-        collapsed ? 'pl-16' : 'pl-60'
+        collapsed ? 'pl-16' : 'pl-64'
       )}>
         <div className="p-6">
           {children}

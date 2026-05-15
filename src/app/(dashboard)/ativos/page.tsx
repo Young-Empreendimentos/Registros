@@ -36,10 +36,10 @@ export default function AtivosPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Activity className="w-6 h-6 text-orange-500" />
+        <Activity className="w-6 h-6 text-orange-600" />
         <div>
-          <h1 className="text-2xl font-bold text-white">Em Andamento</h1>
-          <p className="text-zinc-500 text-sm">
+          <h1 className="text-2xl font-bold text-orange-950">Em Andamento</h1>
+          <p className="text-orange-700 text-sm">
             {activeCount} registro(s) em processo de conclusão
           </p>
         </div>

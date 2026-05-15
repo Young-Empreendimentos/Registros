@@ -79,23 +79,27 @@ export function Sidebar({ profile }: SidebarProps) {
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          'fixed left-0 top-0 z-40 h-screen bg-zinc-900/95 backdrop-blur-xl border-r border-zinc-800 flex flex-col transition-all duration-300',
-          collapsed ? 'w-16' : 'w-60'
+          'fixed left-0 top-0 z-40 h-screen bg-white border-r border-gray-200 flex flex-col transition-all duration-300 shadow-sm',
+          collapsed ? 'w-16' : 'w-64'
         )}
       >
-        {/* Logo */}
-        <div className="flex items-center gap-3 p-4 border-b border-zinc-800">
-          <Logo size="sm" className="shrink-0" />
-          {!collapsed && (
-            <div className="overflow-hidden">
-              <h2 className="text-sm font-semibold text-white truncate">Young</h2>
-              <p className="text-[10px] text-zinc-500 truncate">Controle de Registros</p>
-            </div>
-          )}
+        {/* Logo Header - Estilo escuro como no exemplo */}
+        <div className="bg-gradient-to-r from-[#0D0D0D] to-[#323232] px-4 py-4">
+          <div className="flex items-center gap-3">
+            <Logo size="sm" className="shrink-0" />
+            {!collapsed && (
+              <div className="overflow-hidden">
+                <h2 className="text-base font-bold text-white truncate">
+                  Young<span className="text-[#FE5009]">.</span>
+                </h2>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider truncate">Controle de Registros</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {filteredNavItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
@@ -105,10 +109,10 @@ export function Sidebar({ profile }: SidebarProps) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
+                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
                   isActive
-                    ? 'bg-orange-600/15 text-orange-400 border border-orange-600/20'
-                    : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                    ? 'bg-[#FE5009] text-white shadow-md shadow-orange-200'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 )}
               >
                 <Icon className="w-5 h-5 shrink-0" />
@@ -130,10 +134,10 @@ export function Sidebar({ profile }: SidebarProps) {
 
           {/* Empreendimentos section */}
           {!collapsed && empreendimentos.length > 0 && (
-            <div className="pt-2 mt-2 border-t border-zinc-800/50">
+            <div className="pt-3 mt-3 border-t border-gray-200">
               <button
                 onClick={() => setEmpExpanded(!empExpanded)}
-                className="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold text-zinc-500 uppercase tracking-wider hover:text-zinc-300 transition-colors"
+                className="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-700 transition-colors"
               >
                 <span className="flex items-center gap-2">
                   <Building2 className="w-4 h-4" />
@@ -150,13 +154,13 @@ export function Sidebar({ profile }: SidebarProps) {
                         key={emp.id}
                         href={`/empreendimentos/${emp.id}`}
                         className={cn(
-                          'flex items-center gap-2 pl-7 pr-3 py-1.5 rounded-md text-[13px] transition-all duration-200',
+                          'flex items-center gap-2 pl-7 pr-3 py-1.5 rounded-lg text-[13px] transition-all duration-200',
                           isEmpActive
-                            ? 'bg-orange-600/10 text-orange-400'
-                            : 'text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300'
+                            ? 'bg-[#FFF0EB] text-[#FE5009] font-medium'
+                            : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
                         )}
                       >
-                        <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0 opacity-50" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0 opacity-60" />
                         <span className="truncate">{emp.nome}</span>
                       </Link>
                     );
@@ -171,7 +175,7 @@ export function Sidebar({ profile }: SidebarProps) {
               <TooltipTrigger asChild>
                 <Link
                   href="/registros"
-                  className="flex items-center justify-center px-3 py-2.5 rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-white transition-all duration-200"
+                  className="flex items-center justify-center px-3 py-2.5 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-all duration-200"
                 >
                   <Building2 className="w-5 h-5" />
                 </Link>
@@ -182,18 +186,18 @@ export function Sidebar({ profile }: SidebarProps) {
         </nav>
 
         {/* User section */}
-        <div className="p-2 border-t border-zinc-800">
+        <div className="p-3 border-t border-gray-200 bg-gray-50">
           {!collapsed && profile && (
             <div className="px-3 py-2 mb-2">
-              <p className="text-sm text-white truncate">{profile.nome || profile.email}</p>
-              <p className="text-[10px] text-zinc-500">{roleLabel[profile.role] || profile.role}</p>
+              <p className="text-sm font-medium text-gray-900 truncate">{profile.nome || profile.email}</p>
+              <p className="text-[11px] text-gray-500">{roleLabel[profile.role] || profile.role}</p>
             </div>
           )}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:bg-zinc-800 hover:text-red-400 transition-all duration-200"
+                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all duration-200"
               >
                 <LogOut className="w-5 h-5 shrink-0" />
                 {!collapsed && <span>Sair</span>}
@@ -206,7 +210,7 @@ export function Sidebar({ profile }: SidebarProps) {
         {/* Collapse toggle */}
         <button
           onClick={toggle}
-          className="absolute -right-3 top-20 w-6 h-6 bg-zinc-800 border border-zinc-700 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all duration-200"
+          className="absolute -right-3 top-20 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-400 hover:text-[#FE5009] hover:border-[#FE5009] shadow-sm transition-all duration-200"
         >
           {collapsed ? (
             <ChevronRight className="w-3 h-3" />

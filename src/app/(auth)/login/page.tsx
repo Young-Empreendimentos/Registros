@@ -78,49 +78,48 @@ export default function LoginPage() {
 
   if (checkingSetup) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f]">
-        <div className="w-8 h-8 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5]">
+        <div className="w-8 h-8 border-2 border-[#FE5009] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f] relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-orange-600/5 via-transparent to-orange-600/5" />
-      <div className="absolute top-1/4 -left-32 w-64 h-64 bg-orange-600/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-1/4 -right-32 w-64 h-64 bg-orange-600/10 rounded-full blur-3xl" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F5F5F5] to-[#FFF0EB] relative overflow-hidden">
+      <div className="absolute top-1/4 -left-32 w-64 h-64 bg-[#FE5009]/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-1/4 -right-32 w-64 h-64 bg-[#FE5009]/10 rounded-full blur-3xl" />
 
       <div className="relative z-10 w-full max-w-md mx-4">
-        <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-2xl p-8 shadow-2xl">
+        <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-xl">
           <div className="flex flex-col items-center mb-8">
             <div className="mb-5">
               <Logo size="lg" />
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
               Controle de Registros
             </h1>
-            <p className="text-zinc-500 text-sm mt-1">
+            <p className="text-gray-500 text-sm mt-1">
               Young Empreendimentos
             </p>
           </div>
 
           <div className="flex items-center gap-4 mb-6">
-            <div className="flex-1 h-px bg-zinc-800" />
-            <span className="text-xs text-zinc-600 uppercase tracking-wider">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-500 uppercase tracking-wider">
               {isSetup ? 'Configuração Inicial' : 'Acesso'}
             </span>
-            <div className="flex-1 h-px bg-zinc-800" />
+            <div className="flex-1 h-px bg-gray-200" />
           </div>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 mb-4">
-              <p className="text-red-400 text-sm">{error}</p>
+            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4">
+              <p className="text-red-600 text-sm">{error}</p>
             </div>
           )}
 
           {isSetup ? (
             <form onSubmit={handleSetup} className="space-y-4">
-              <p className="text-zinc-400 text-sm text-center mb-4">
+              <p className="text-gray-500 text-sm text-center mb-4">
                 Crie a conta de administrador para começar.
               </p>
               <div className="space-y-2">

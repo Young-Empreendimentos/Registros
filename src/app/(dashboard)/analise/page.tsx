@@ -54,7 +54,11 @@ export default function AnalisePage() {
   const canEdit = profile?.role !== 'leitor';
 
   const emAndamento = useMemo(() => {
-    return registros.filter((r) => ETAPAS_EM_ANDAMENTO.includes(r.etapa));
+    return registros.filter((r) => 
+      ETAPAS_EM_ANDAMENTO.includes(r.etapa) &&
+      !r.registro.segurar_registro &&
+      !r.registro.financiamento_caixa
+    );
   }, [registros]);
 
   const empreendimentos = useMemo(() => {
@@ -127,7 +131,7 @@ export default function AnalisePage() {
   const SortHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
     <button
       onClick={() => toggleSort(field)}
-      className="flex items-center gap-1 text-xs font-semibold text-zinc-400 uppercase tracking-wider hover:text-white transition-colors"
+      className="flex items-center gap-1 text-xs font-semibold text-orange-800 uppercase tracking-wider hover:text-orange-600 transition-colors"
     >
       {children}
       <ArrowUpDown className="w-3 h-3" />
@@ -143,7 +147,7 @@ export default function AnalisePage() {
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-4">
           <div className="w-8 h-8 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-zinc-500 text-sm">Carregando...</p>
+          <p className="text-orange-800 text-sm">Carregando...</p>
         </div>
       </div>
     );
@@ -161,63 +165,65 @@ export default function AnalisePage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <BarChart3 className="w-6 h-6 text-orange-500" />
+        <BarChart3 className="w-6 h-6 text-orange-600" />
         <div>
-          <h1 className="text-2xl font-bold text-white">Análise</h1>
-          <p className="text-zinc-500 text-sm">
+          <h1 className="text-2xl font-bold text-orange-950">Análise</h1>
+          <p className="text-orange-700 text-sm">
             {emAndamento.length} registro(s) em andamento
           </p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-          <Input
-            placeholder="Buscar lote, cliente, empreendimento..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+      <div className="bg-white rounded-xl border border-orange-200 p-4 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400" />
+            <Input
+              placeholder="Buscar lote, cliente, empreendimento..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-orange-400 hover:text-orange-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          <MultiSelect
+            options={etapaOptions}
+            selected={etapaFilters}
+            onChange={handleMultiFilterChange(setEtapaFilters)}
+            placeholder="Etapas"
+            className="w-[220px]"
           />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
+
+          <MultiSelect
+            options={empOptions}
+            selected={empFilters}
+            onChange={handleMultiFilterChange(setEmpFilters)}
+            placeholder="Empreendimentos"
+            className="w-[200px]"
+          />
+
+          <span className="text-xs text-orange-800 font-medium">
+            {filtered.length} registro(s)
+          </span>
         </div>
-
-        <MultiSelect
-          options={etapaOptions}
-          selected={etapaFilters}
-          onChange={handleMultiFilterChange(setEtapaFilters)}
-          placeholder="Etapas"
-          className="w-[220px]"
-        />
-
-        <MultiSelect
-          options={empOptions}
-          selected={empFilters}
-          onChange={handleMultiFilterChange(setEmpFilters)}
-          placeholder="Empreendimentos"
-          className="w-[200px]"
-        />
-
-        <span className="text-xs text-zinc-500">
-          {filtered.length} registro(s)
-        </span>
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+      <div className="rounded-xl border border-orange-200 bg-white overflow-hidden shadow-sm">
         <ScrollArea className="w-full">
           <div className="min-w-[900px]">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-zinc-800 bg-zinc-900/80">
+                <tr className="border-b border-orange-200 bg-orange-50">
                   <th className="px-4 py-3 text-left w-[100px]">
                     <SortHeader field="lote">Lote</SortHeader>
                   </th>
@@ -234,7 +240,7 @@ export default function AnalisePage() {
                     <SortHeader field="etapa">Etapa</SortHeader>
                   </th>
                   <th className="px-4 py-3 text-left min-w-[300px]">
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Andamento</span>
+                    <span className="text-xs font-semibold text-orange-800 uppercase tracking-wider">Andamento</span>
                   </th>
                 </tr>
               </thead>
@@ -242,30 +248,30 @@ export default function AnalisePage() {
                 {filtered.map((item) => (
                   <tr
                     key={item.registro.id}
-                    className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors"
+                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                   >
-                    <td className="px-4 py-3 text-white font-medium">
+                    <td className="px-4 py-3 text-gray-900 font-medium">
                       {item.lote.numero}
                     </td>
-                    <td className="px-4 py-3 text-zinc-300">
+                    <td className="px-4 py-3 text-gray-700">
                       {item.empreendimento.nome}
                     </td>
-                    <td className="px-4 py-3 text-zinc-300">
+                    <td className="px-4 py-3 text-gray-700">
                       {item.contrato?.cliente_nome || '-'}
                     </td>
                     <td className="px-4 py-3 text-center">
                       {item.dias !== null ? (
                         <span className={
                           item.dias > 180 
-                            ? 'text-red-400 font-bold' 
+                            ? 'text-red-600 font-bold' 
                             : item.dias > 60 
-                              ? 'text-amber-400 font-semibold' 
-                              : 'text-zinc-400'
+                              ? 'text-amber-600 font-semibold' 
+                              : 'text-gray-600'
                         }>
                           {item.dias}
                         </span>
                       ) : (
-                        <span className="text-zinc-600">-</span>
+                        <span className="text-gray-400">-</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -284,7 +290,7 @@ export default function AnalisePage() {
 
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-zinc-600">
+                    <td colSpan={6} className="px-4 py-12 text-center text-orange-700">
                       Nenhum registro em andamento encontrado
                     </td>
                   </tr>

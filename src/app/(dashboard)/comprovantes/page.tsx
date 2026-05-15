@@ -113,10 +113,10 @@ export default function ComprovantesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <FileCheck className="w-6 h-6 text-orange-500" />
+          <FileCheck className="w-6 h-6 text-orange-600" />
           <div>
-            <h1 className="text-2xl font-bold text-white">Comprovantes</h1>
-            <p className="text-zinc-500 text-sm">
+            <h1 className="text-2xl font-bold text-orange-950">Comprovantes</h1>
+            <p className="text-orange-700 text-sm">
               Comprovantes de ITBI vinculados automaticamente aos registros
             </p>
           </div>
@@ -190,27 +190,27 @@ export default function ComprovantesPage() {
           <div className="w-8 h-8 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+        <div className="rounded-xl border border-orange-200 bg-white overflow-hidden shadow-sm">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-zinc-800 bg-zinc-900/80">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Lote</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Empreendimento</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Descrição</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Data</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider">Ações</th>
+              <tr className="border-b border-orange-200 bg-orange-50">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-orange-800 uppercase tracking-wider">Lote</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-orange-800 uppercase tracking-wider">Empreendimento</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-orange-800 uppercase tracking-wider">Descrição</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-orange-800 uppercase tracking-wider">Data</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-orange-800 uppercase tracking-wider">Ações</th>
               </tr>
             </thead>
             <tbody>
               {comprovantes.map((c) => (
                 <tr
                   key={c.id}
-                  className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors"
+                  className="border-b border-orange-100 hover:bg-orange-50 transition-colors"
                 >
                   <td className="px-4 py-3 text-white font-medium">Lote {c.lote_numero}</td>
-                  <td className="px-4 py-3 text-zinc-300">{c.empreendimento_nome}</td>
-                  <td className="px-4 py-3 text-zinc-400">{c.descricao || '-'}</td>
-                  <td className="px-4 py-3 text-zinc-400 text-xs">{formatDate(c.created_at)}</td>
+                  <td className="px-4 py-3 text-gray-700">{c.empreendimento_nome}</td>
+                  <td className="px-4 py-3 text-gray-600">{c.descricao || '-'}</td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(c.created_at)}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-2">
                       <Button
@@ -232,7 +232,7 @@ export default function ComprovantesPage() {
               ))}
               {comprovantes.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-zinc-600">
+                  <td colSpan={5} className="px-4 py-12 text-center text-orange-600">
                     Nenhum comprovante cadastrado
                   </td>
                 </tr>

@@ -50,7 +50,7 @@ export function MultiSelect({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center justify-between w-full h-9 px-3 rounded-md border border-zinc-700 bg-zinc-800 text-sm text-zinc-300 hover:border-zinc-600 transition-colors"
+        className="flex items-center justify-between w-full h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:border-gray-300 transition-colors"
       >
         <span className="truncate">
           {selected.length === 0
@@ -61,17 +61,17 @@ export function MultiSelect({
           {selected.length > 0 && (
             <span
               onClick={clearAll}
-              className="p-0.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-white"
+              className="p-0.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
             >
               <X className="w-3 h-3" />
             </span>
           )}
-          <ChevronDown className={cn('w-3.5 h-3.5 text-zinc-500 transition-transform', open && 'rotate-180')} />
+          <ChevronDown className={cn('w-3.5 h-3.5 text-gray-400 transition-transform', open && 'rotate-180')} />
         </div>
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-md border border-zinc-700 bg-zinc-900 shadow-xl">
+        <div className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-lg border border-gray-200 bg-white shadow-xl">
           {options.map((opt) => {
             const isSelected = selected.includes(opt.value);
             return (
@@ -80,16 +80,16 @@ export function MultiSelect({
                 type="button"
                 onClick={() => toggle(opt.value)}
                 className={cn(
-                  'flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-zinc-800 transition-colors',
-                  isSelected ? 'text-orange-400' : 'text-zinc-300'
+                  'flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-gray-50 transition-colors',
+                  isSelected ? 'text-[#FE5009]' : 'text-gray-700'
                 )}
               >
                 <span
                   className={cn(
                     'flex items-center justify-center w-4 h-4 rounded border shrink-0',
                     isSelected
-                      ? 'bg-orange-600 border-orange-600'
-                      : 'border-zinc-600 bg-zinc-800'
+                      ? 'bg-[#FE5009] border-[#FE5009]'
+                      : 'border-gray-300 bg-white'
                   )}
                 >
                   {isSelected && <Check className="w-3 h-3 text-white" />}

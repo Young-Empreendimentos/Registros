@@ -53,33 +53,33 @@ const ALL_ETAPAS: Etapa[] = [
 
 const EMP_COLORS: Record<string, string> = {};
 const COLOR_PALETTE = [
-  'bg-orange-500/15 text-orange-300 border-orange-500/30',
-  'bg-sky-500/15 text-sky-300 border-sky-500/30',
-  'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-  'bg-violet-500/15 text-violet-300 border-violet-500/30',
-  'bg-pink-500/15 text-pink-300 border-pink-500/30',
-  'bg-amber-500/15 text-amber-300 border-amber-500/30',
-  'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
-  'bg-rose-500/15 text-rose-300 border-rose-500/30',
-  'bg-lime-500/15 text-lime-300 border-lime-500/30',
-  'bg-indigo-500/15 text-indigo-300 border-indigo-500/30',
-  'bg-teal-500/15 text-teal-300 border-teal-500/30',
-  'bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/30',
+  'bg-blue-50 text-blue-700 border-blue-200',
+  'bg-emerald-50 text-emerald-700 border-emerald-200',
+  'bg-amber-50 text-amber-700 border-amber-200',
+  'bg-purple-50 text-purple-700 border-purple-200',
+  'bg-rose-50 text-rose-700 border-rose-200',
+  'bg-cyan-50 text-cyan-700 border-cyan-200',
+  'bg-orange-50 text-orange-700 border-orange-200',
+  'bg-indigo-50 text-indigo-700 border-indigo-200',
+  'bg-teal-50 text-teal-700 border-teal-200',
+  'bg-pink-50 text-pink-700 border-pink-200',
+  'bg-lime-50 text-lime-700 border-lime-200',
+  'bg-violet-50 text-violet-700 border-violet-200',
 ];
 
 const LEFT_BORDER_PALETTE = [
-  'border-l-orange-500',
-  'border-l-sky-500',
-  'border-l-emerald-500',
-  'border-l-violet-500',
-  'border-l-pink-500',
-  'border-l-amber-500',
-  'border-l-cyan-500',
-  'border-l-rose-500',
-  'border-l-lime-500',
-  'border-l-indigo-500',
-  'border-l-teal-500',
-  'border-l-fuchsia-500',
+  'border-l-blue-400',
+  'border-l-emerald-400',
+  'border-l-amber-400',
+  'border-l-purple-400',
+  'border-l-rose-400',
+  'border-l-cyan-400',
+  'border-l-orange-400',
+  'border-l-indigo-400',
+  'border-l-teal-400',
+  'border-l-pink-400',
+  'border-l-lime-400',
+  'border-l-violet-400',
 ];
 
 function getEmpColor(name: string): string {
@@ -140,7 +140,9 @@ export function RegistrosTable({
         (r) =>
           r.etapa !== 'Propriedade Young' &&
           r.etapa !== 'Vendido' &&
-          r.etapa !== 'Concluído'
+          r.etapa !== 'Concluído' &&
+          !r.registro.segurar_registro &&
+          !r.registro.financiamento_caixa
       );
     }
 
@@ -241,146 +243,148 @@ export function RegistrosTable({
   const SortHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
     <button
       onClick={() => toggleSort(field)}
-      className="flex items-center gap-1 text-xs font-semibold text-zinc-400 uppercase tracking-wider hover:text-white transition-colors"
+      className="flex items-center gap-0.5 text-[10px] font-semibold text-orange-800 uppercase tracking-wider hover:text-[#FE5009] transition-colors"
     >
       {children}
-      <ArrowUpDown className="w-3 h-3" />
+      <ArrowUpDown className="w-2.5 h-2.5" />
     </button>
   );
 
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-          <Input
-            placeholder="Buscar lote, cliente, empreendimento..."
-            value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setPage(0); }}
-            className="pl-10"
+      <div className="bg-white rounded-xl border border-orange-200 p-4 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400" />
+            <Input
+              placeholder="Buscar lote, cliente, empreendimento..."
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setPage(0); }}
+              className="pl-10"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => { setSearchTerm(''); setPage(0); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-orange-400 hover:text-orange-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          <MultiSelect
+            options={etapaOptions}
+            selected={etapaFilters}
+            onChange={handleMultiFilterChange(setEtapaFilters)}
+            placeholder="Etapas"
+            className="w-[200px]"
           />
-          {searchTerm && (
-            <button
-              onClick={() => { setSearchTerm(''); setPage(0); }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
+
+          <MultiSelect
+            options={empOptions}
+            selected={empFilters}
+            onChange={handleMultiFilterChange(setEmpFilters)}
+            placeholder="Empreendimentos"
+            className="w-[200px]"
+          />
+
+          <MultiSelect
+            options={boolOptions}
+            selected={boolFilters}
+            onChange={handleMultiFilterChange(setBoolFilters)}
+            placeholder="Flags"
+            className="w-[180px]"
+          />
+
+          <span className="text-xs text-orange-800 font-medium">
+            {filtered.length} registro(s)
+          </span>
         </div>
-
-        <MultiSelect
-          options={etapaOptions}
-          selected={etapaFilters}
-          onChange={handleMultiFilterChange(setEtapaFilters)}
-          placeholder="Etapas"
-          className="w-[200px]"
-        />
-
-        <MultiSelect
-          options={empOptions}
-          selected={empFilters}
-          onChange={handleMultiFilterChange(setEmpFilters)}
-          placeholder="Empreendimentos"
-          className="w-[200px]"
-        />
-
-        <MultiSelect
-          options={boolOptions}
-          selected={boolFilters}
-          onChange={handleMultiFilterChange(setBoolFilters)}
-          placeholder="Flags"
-          className="w-[180px]"
-        />
-
-        <span className="text-xs text-zinc-500">
-          {filtered.length} registro(s)
-        </span>
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+      <div className="rounded-xl border border-orange-200 bg-white overflow-hidden shadow-sm">
         <ScrollArea className="w-full">
-          <div className="min-w-[2400px]">
-            <table className="w-full text-sm">
+          <div className="min-w-[2000px]">
+            <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-zinc-800 bg-zinc-900/80">
-                  <th className="sticky left-0 z-10 bg-zinc-900 px-3 py-3 text-left min-w-[200px]">
-                    <SortHeader field="empreendimento">Empreend. / Lote</SortHeader>
+                <tr className="border-b border-orange-200 bg-orange-50">
+                  <th className="sticky left-0 z-10 bg-orange-50 px-2 py-2 text-left min-w-[140px]">
+                    <SortHeader field="empreendimento">Emp. / Lote</SortHeader>
                   </th>
-                  <th className="px-3 py-3 text-left">
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Cliente</span>
+                  <th className="px-2 py-2 text-left">
+                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Cliente</span>
                   </th>
-                  <th className="px-3 py-3 text-left">
+                  <th className="px-2 py-2 text-left">
                     <SortHeader field="etapa">Etapa</SortHeader>
                   </th>
-                  <th className="px-3 py-3 text-right">
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Valor A.V</span>
+                  <th className="px-2 py-2 text-right">
+                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">A.V</span>
                   </th>
-                  <th className="px-3 py-3 text-right">
+                  <th className="px-2 py-2 text-right">
                     <SortHeader field="valor_total">Total</SortHeader>
                   </th>
-                  <th className="px-3 py-3 text-right">
-                    <SortHeader field="valor_ja_pago">Já pago</SortHeader>
+                  <th className="px-2 py-2 text-right">
+                    <SortHeader field="valor_ja_pago">Pago</SortHeader>
                   </th>
-                  <th className="px-3 py-3 text-right">
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Gatilho</span>
+                  <th className="px-2 py-2 text-right">
+                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Gatilho</span>
                   </th>
-                  <th className="px-3 py-3 text-left">
-                    <SortHeader field="data_contrato">Dt. Contrato</SortHeader>
+                  <th className="px-2 py-2 text-left">
+                    <SortHeader field="data_contrato">Contrato</SortHeader>
                   </th>
-                  <th className="px-3 py-3 text-left">
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Solic. ITBI</span>
+                  <th className="px-2 py-2 text-left">
+                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Sol. ITBI</span>
                   </th>
-                  <th className="px-3 py-3 text-right">
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Esper. ITBI</span>
+                  <th className="px-2 py-2 text-right">
+                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Esp. ITBI</span>
                   </th>
-                  <th className="px-3 py-3 text-right">
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Valor ITBI</span>
+                  <th className="px-2 py-2 text-right">
+                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Vl. ITBI</span>
                   </th>
-                  <th className="px-3 py-3 text-right">
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Diverg.</span>
+                  <th className="px-2 py-2 text-right">
+                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Div.</span>
                   </th>
-                  <th className="px-3 py-3 text-left">
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Boleto ITBI</span>
+                  <th className="px-2 py-2 text-left">
+                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Boleto</span>
                   </th>
-                  <th className="px-3 py-3 text-left">
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Comprov. ITBI</span>
+                  <th className="px-2 py-2 text-left">
+                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Comprov.</span>
                   </th>
-                  <th className="px-3 py-3 text-left">
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">OP Registro</span>
+                  <th className="px-2 py-2 text-left">
+                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">OP Reg.</span>
                   </th>
-                  <th className="px-3 py-3 text-left">
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">NF Registro</span>
+                  <th className="px-2 py-2 text-left">
+                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">NF Reg.</span>
                   </th>
-                  <th className="px-3 py-3 text-left">
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Matrícula</span>
+                  <th className="px-2 py-2 text-left">
+                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Matríc.</span>
                   </th>
-                  <th className="px-3 py-3 text-left">
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Dt. Recol. ITBI</span>
+                  <th className="px-2 py-2 text-left">
+                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Recol.</span>
                   </th>
-                  <th className="px-3 py-3 text-left">
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Entrega R.I</span>
+                  <th className="px-2 py-2 text-left">
+                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Entr. RI</span>
                   </th>
-                  <th className="px-3 py-3 text-left">
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Receb. R.I</span>
+                  <th className="px-2 py-2 text-left">
+                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Receb. RI</span>
                   </th>
-                  <th className="px-3 py-3 text-center">
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Flags</span>
+                  <th className="px-2 py-2 text-center">
+                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Flags</span>
                   </th>
-                  <th className="px-3 py-3 text-left">
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Dt. Gatilho</span>
+                  <th className="px-2 py-2 text-left">
+                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Gatilho</span>
                   </th>
-                  <th className="px-3 py-3 text-right">
+                  <th className="px-2 py-2 text-right">
                     <SortHeader field="dias">Dias</SortHeader>
                   </th>
-                  <th className="px-3 py-3 text-center">
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Ações</span>
+                  <th className="px-2 py-2 text-center">
+                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Ações</span>
                   </th>
                   {showObservacoes && (
-                    <th className="px-3 py-3 text-left">
-                      <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Observações</span>
+                    <th className="px-2 py-2 text-left">
+                      <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Obs.</span>
                     </th>
                   )}
                 </tr>
@@ -388,70 +392,70 @@ export function RegistrosTable({
               <tbody>
                 {paged.map((item) => {
                   const isConcluido = item.etapa === 'Concluído';
-                  const rowBg = isConcluido ? 'bg-emerald-950/40' : '';
-                  const cellBg = isConcluido ? 'bg-emerald-950/40' : 'bg-zinc-900';
+                  const rowBg = isConcluido ? 'bg-emerald-50' : '';
+                  const cellBg = isConcluido ? 'bg-emerald-50' : 'bg-white';
                   
                   return (
                   <tr
                     key={item.registro.id}
-                    className={`border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors border-l-3 ${getEmpBorder(item.empreendimento.nome)} ${rowBg}`}
+                    className={`border-b border-gray-100 hover:bg-gray-50 transition-colors border-l-4 ${getEmpBorder(item.empreendimento.nome)} ${rowBg}`}
                   >
                     {/* Empreendimento + Lote (merged) */}
-                    <td className={`sticky left-0 z-10 px-3 py-2.5 border-l-3 ${getEmpBorder(item.empreendimento.nome)} ${cellBg}`}>
-                      <div className="flex flex-col gap-0.5">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border w-fit ${getEmpColor(item.empreendimento.nome)}`}>
+                    <td className={`sticky left-0 z-10 px-2 py-1.5 border-l-4 ${getEmpBorder(item.empreendimento.nome)} ${cellBg}`}>
+                      <div className="flex flex-col">
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold border w-fit ${getEmpColor(item.empreendimento.nome)}`}>
                           {item.empreendimento.nome}
                         </span>
-                        <span className="text-white font-medium text-sm">{item.lote.numero}</span>
+                        <span className="text-gray-900 font-medium text-xs">{item.lote.numero}</span>
                       </div>
                     </td>
 
                     {/* Cliente */}
-                    <td className="px-3 py-2.5">
+                    <td className="px-2 py-1.5">
                       <div>
-                        <p className="text-zinc-200 text-sm truncate max-w-[150px]">
+                        <p className="text-gray-800 text-xs truncate max-w-[120px]">
                           {item.contrato?.cliente_nome || '-'}
                         </p>
-                        <p className="text-zinc-500 text-xs truncate max-w-[150px]">
+                        <p className="text-gray-400 text-[10px] truncate max-w-[120px]">
                           {item.contrato?.cliente_email || ''}
                         </p>
                       </div>
                     </td>
 
                     {/* Etapa */}
-                    <td className="px-3 py-2.5">
+                    <td className="px-2 py-1.5">
                       <EtapaBadge etapa={item.etapa} />
                     </td>
 
                     {/* Valor A.V */}
-                    <td className="px-3 py-2.5 text-right text-zinc-400 text-xs">
+                    <td className="px-2 py-1.5 text-right text-gray-500 text-[11px]">
                       {item.lote.valor_avista ? formatCurrency(item.lote.valor_avista) : '-'}
                     </td>
 
                     {/* Total */}
-                    <td className="px-3 py-2.5 text-right text-zinc-300 text-xs">
+                    <td className="px-2 py-1.5 text-right text-gray-700 text-[11px]">
                       {item.contrato ? formatCurrency(item.contrato.valor_total) : '-'}
                     </td>
 
                     {/* Já pago */}
-                    <td className="px-3 py-2.5 text-right text-zinc-300 text-xs">
+                    <td className="px-2 py-1.5 text-right text-gray-700 text-[11px]">
                       {item.contrato ? formatCurrency(item.contrato.valor_ja_pago) : '-'}
                     </td>
 
                     {/* Gatilho */}
-                    <td className="px-3 py-2.5 text-right text-xs">
-                      <span className={item.gatilho_atingido ? 'text-emerald-400' : 'text-zinc-500'}>
+                    <td className="px-2 py-1.5 text-right text-[11px]">
+                      <span className={item.gatilho_atingido ? 'text-emerald-600 font-medium' : 'text-gray-400'}>
                         {item.gatilho > 0 ? formatCurrency(item.gatilho) : '-'}
                       </span>
                     </td>
 
                     {/* Data contrato */}
-                    <td className="px-3 py-2.5 text-zinc-400 text-xs">
+                    <td className="px-2 py-1.5 text-gray-500 text-[11px]">
                       {formatDate(item.contrato?.data_contrato || null)}
                     </td>
 
                     {/* Solic. ITBI */}
-                    <td className="px-3 py-2.5">
+                    <td className="px-2 py-1.5">
                       <InlineTextEdit
                         value={item.registro.data_solicitacao_itbi}
                         onSave={async (v) => onUpdate(item.registro.id, { data_solicitacao_itbi: v || null })}
@@ -461,12 +465,12 @@ export function RegistrosTable({
                     </td>
 
                     {/* Valor esperado ITBI */}
-                    <td className="px-3 py-2.5 text-right text-zinc-400 text-xs">
+                    <td className="px-2 py-1.5 text-right text-gray-400 text-[11px]">
                       {item.valor_esperado_itbi > 0 ? formatCurrency(item.valor_esperado_itbi) : '-'}
                     </td>
 
                     {/* Valor ITBI */}
-                    <td className="px-3 py-2.5 text-right">
+                    <td className="px-2 py-1.5 text-right">
                       <InlineTextEdit
                         value={item.registro.valor_itbi?.toString() || null}
                         onSave={async (v) => onUpdate(item.registro.id, { valor_itbi: v ? parseFloat(v) : null })}
@@ -477,16 +481,16 @@ export function RegistrosTable({
                     </td>
 
                     {/* Divergências */}
-                    <td className="px-3 py-2.5 text-right text-xs">
+                    <td className="px-2 py-1.5 text-right text-[11px]">
                       {item.divergencias !== null ? (
-                        <span className={item.divergencias > 0 ? 'text-red-400' : item.divergencias < 0 ? 'text-amber-400' : 'text-emerald-400'}>
+                        <span className={item.divergencias > 0 ? 'text-red-600 font-medium' : item.divergencias < 0 ? 'text-amber-600' : 'text-emerald-600'}>
                           {formatCurrency(item.divergencias)}
                         </span>
                       ) : '-'}
                     </td>
 
                     {/* Boleto ITBI */}
-                    <td className="px-3 py-2.5">
+                    <td className="px-2 py-1.5">
                       <UrlField
                         value={item.registro.boleto_itbi_url}
                         onSave={async (v) => {
@@ -502,7 +506,7 @@ export function RegistrosTable({
                     </td>
 
                     {/* Comprovante ITBI */}
-                    <td className="px-3 py-2.5">
+                    <td className="px-2 py-1.5">
                       <UrlField
                         value={item.registro.comprovante_itbi_url}
                         onSave={async (v) => onUpdate(item.registro.id, { comprovante_itbi_url: v || null })}
@@ -515,7 +519,7 @@ export function RegistrosTable({
                     </td>
 
                     {/* OP Registro */}
-                    <td className="px-3 py-2.5">
+                    <td className="px-2 py-1.5">
                       <UrlField
                         value={item.registro.op_registro_url}
                         onSave={async (v) => {
@@ -531,7 +535,7 @@ export function RegistrosTable({
                     </td>
 
                     {/* NF Registro */}
-                    <td className="px-3 py-2.5">
+                    <td className="px-2 py-1.5">
                       <UrlField
                         value={item.registro.nf_registro_url}
                         onSave={async (v) => onUpdate(item.registro.id, { nf_registro_url: v || null })}
@@ -544,7 +548,7 @@ export function RegistrosTable({
                     </td>
 
                     {/* Matrícula */}
-                    <td className="px-3 py-2.5">
+                    <td className="px-2 py-1.5">
                       <UrlField
                         value={item.registro.matricula_url}
                         onSave={async (v) => onUpdate(item.registro.id, { matricula_url: v || null })}
@@ -557,7 +561,7 @@ export function RegistrosTable({
                     </td>
 
                     {/* Dt. Recolhimento ITBI */}
-                    <td className="px-3 py-2.5">
+                    <td className="px-2 py-1.5">
                       <InlineTextEdit
                         value={item.registro.data_recolhimento_itbi}
                         onSave={async (v) => onUpdate(item.registro.id, { data_recolhimento_itbi: v || null })}
@@ -567,7 +571,7 @@ export function RegistrosTable({
                     </td>
 
                     {/* Entrega R.I */}
-                    <td className="px-3 py-2.5">
+                    <td className="px-2 py-1.5">
                       <InlineTextEdit
                         value={item.registro.data_entrega_ri}
                         onSave={async (v) => onUpdate(item.registro.id, { data_entrega_ri: v || null })}
@@ -577,7 +581,7 @@ export function RegistrosTable({
                     </td>
 
                     {/* Recebimento R.I */}
-                    <td className="px-3 py-2.5">
+                    <td className="px-2 py-1.5">
                       <InlineTextEdit
                         value={item.registro.data_recebimento_ri}
                         onSave={async (v) => onUpdate(item.registro.id, { data_recebimento_ri: v || null })}
@@ -587,8 +591,8 @@ export function RegistrosTable({
                     </td>
 
                     {/* Flags */}
-                    <td className="px-3 py-2.5">
-                      <div className="flex flex-col gap-1">
+                    <td className="px-2 py-1.5">
+                      <div className="flex flex-col gap-0.5">
                         <InlineCheckbox
                           checked={item.registro.impugnado}
                           onToggle={async (v) => onUpdate(item.registro.id, { impugnado: v })}
@@ -617,23 +621,23 @@ export function RegistrosTable({
                     </td>
 
                     {/* Data Gatilho */}
-                    <td className="px-3 py-2.5 text-zinc-400 text-xs">
+                    <td className="px-2 py-1.5 text-gray-500 text-[11px]">
                       {formatDate(item.registro.data_gatilho)}
                     </td>
 
                     {/* Dias */}
-                    <td className="px-3 py-2.5 text-right">
+                    <td className="px-2 py-1.5 text-right text-[11px]">
                       {item.dias !== null ? (
-                        <span className={item.dias > 60 ? 'text-red-400 font-semibold' : item.dias > 30 ? 'text-amber-400' : 'text-zinc-400'}>
+                        <span className={item.dias > 60 ? 'text-red-600 font-semibold' : item.dias > 30 ? 'text-amber-600 font-medium' : 'text-gray-500'}>
                           {item.dias}d
                         </span>
                       ) : (
-                        <span className="text-zinc-600">-</span>
+                        <span className="text-gray-300">-</span>
                       )}
                     </td>
 
                     {/* Ações */}
-                    <td className="px-3 py-2.5">
+                    <td className="px-2 py-1.5">
                       <div className="flex items-center gap-1">
                         {item.registro.matricula_url && item.contrato?.cliente_email && (
                           <Button
@@ -641,9 +645,9 @@ export function RegistrosTable({
                             size="icon"
                             onClick={() => onSendMatricula?.(item)}
                             title="Enviar matrícula ao cliente"
-                            className="h-7 w-7"
+                            className="h-6 w-6"
                           >
-                            <Mail className="w-3.5 h-3.5 text-orange-500" />
+                            <Mail className="w-3 h-3 text-orange-500" />
                           </Button>
                         )}
                       </div>
@@ -651,7 +655,7 @@ export function RegistrosTable({
 
                     {/* Observações */}
                     {showObservacoes && (
-                      <td className="px-3 py-2.5 min-w-[200px]">
+                      <td className="px-2 py-1.5 min-w-[180px]">
                         <InlineTextEdit
                           value={item.registro.observacoes}
                           onSave={async (v) => onUpdate(item.registro.id, { observacoes: v || null })}
@@ -666,7 +670,7 @@ export function RegistrosTable({
 
                 {paged.length === 0 && (
                   <tr>
-                    <td colSpan={showObservacoes ? 25 : 24} className="px-3 py-12 text-center text-zinc-600">
+                    <td colSpan={showObservacoes ? 25 : 24} className="px-3 py-12 text-center text-gray-400">
                       Nenhum registro encontrado
                     </td>
                   </tr>
@@ -679,8 +683,8 @@ export function RegistrosTable({
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-zinc-800 bg-zinc-900/80">
-            <span className="text-xs text-zinc-500">
+          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
+            <span className="text-xs text-gray-500">
               {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} de {filtered.length}
             </span>
             <div className="flex items-center gap-1">
@@ -690,7 +694,7 @@ export function RegistrosTable({
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => safeSetPage(page - 1)} disabled={page === 0}>
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              <span className="text-xs text-zinc-400 px-3">
+              <span className="text-xs text-gray-600 px-3">
                 Página {page + 1} de {totalPages}
               </span>
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => safeSetPage(page + 1)} disabled={page >= totalPages - 1}>
