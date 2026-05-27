@@ -6,6 +6,7 @@ import { EtapaBadge } from './etapa-badge';
 import { InlineTextEdit, InlineCheckbox, UrlField } from './inline-edit';
 import { DocumentPreview } from '@/components/document-preview';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { isRegistroEmAndamento } from '@/lib/analise';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MultiSelect } from '@/components/ui/multi-select';
@@ -136,14 +137,7 @@ export function RegistrosTable({
     let data = [...registros];
 
     if (filterActiveOnly) {
-      data = data.filter(
-        (r) =>
-          r.etapa !== 'Propriedade Young' &&
-          r.etapa !== 'Vendido' &&
-          r.etapa !== 'Concluído' &&
-          !r.registro.segurar_registro &&
-          !r.registro.financiamento_caixa
-      );
+      data = data.filter(isRegistroEmAndamento);
     }
 
     if (searchTerm) {
@@ -243,7 +237,8 @@ export function RegistrosTable({
   const SortHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
     <button
       onClick={() => toggleSort(field)}
-      className="flex items-center gap-0.5 text-[10px] font-semibold text-orange-800 uppercase tracking-wider hover:text-[#FE5009] transition-colors"
+      className="flex items-center gap-0.5 text-[10px] font-semibold uppercase tracking-wider transition-colors hover:text-[var(--primary)]"
+      style={{ color: 'var(--primary-dark)' }}
     >
       {children}
       <ArrowUpDown className="w-2.5 h-2.5" />
@@ -253,7 +248,7 @@ export function RegistrosTable({
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="bg-white rounded-xl border border-orange-200 p-4 shadow-sm">
+      <div className="p-4 border-b border-[var(--gray-lighter)]" style={{ background: 'var(--bg-card)' }}>
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400" />
@@ -304,23 +299,23 @@ export function RegistrosTable({
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-orange-200 bg-white overflow-hidden shadow-sm">
+      <div className="overflow-hidden">
         <ScrollArea className="w-full">
           <div className="min-w-[2000px]">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-orange-200 bg-orange-50">
-                  <th className="sticky left-0 z-10 bg-orange-50 px-2 py-2 text-left min-w-[140px]">
+                <tr className="border-b border-[var(--gray-lighter)]" style={{ background: 'var(--primary-light)' }}>
+                  <th className="sticky left-0 z-10 px-2 py-2 text-left min-w-[140px]" style={{ background: 'var(--primary-light)' }}>
                     <SortHeader field="empreendimento">Emp. / Lote</SortHeader>
                   </th>
                   <th className="px-2 py-2 text-left">
-                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Cliente</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Cliente</span>
                   </th>
                   <th className="px-2 py-2 text-left">
                     <SortHeader field="etapa">Etapa</SortHeader>
                   </th>
                   <th className="px-2 py-2 text-right">
-                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">A.V</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>A.V</span>
                   </th>
                   <th className="px-2 py-2 text-right">
                     <SortHeader field="valor_total">Total</SortHeader>
@@ -329,62 +324,62 @@ export function RegistrosTable({
                     <SortHeader field="valor_ja_pago">Pago</SortHeader>
                   </th>
                   <th className="px-2 py-2 text-right">
-                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Gatilho</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Gatilho</span>
                   </th>
                   <th className="px-2 py-2 text-left">
                     <SortHeader field="data_contrato">Contrato</SortHeader>
                   </th>
                   <th className="px-2 py-2 text-left">
-                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Sol. ITBI</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Sol. ITBI</span>
                   </th>
                   <th className="px-2 py-2 text-right">
-                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Esp. ITBI</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Esp. ITBI</span>
                   </th>
                   <th className="px-2 py-2 text-right">
-                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Vl. ITBI</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Vl. ITBI</span>
                   </th>
                   <th className="px-2 py-2 text-right">
-                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Div.</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Div.</span>
                   </th>
                   <th className="px-2 py-2 text-left">
-                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Boleto</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Boleto</span>
                   </th>
                   <th className="px-2 py-2 text-left">
-                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Comprov.</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Comprov.</span>
                   </th>
                   <th className="px-2 py-2 text-left">
-                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">OP Reg.</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>OP Reg.</span>
                   </th>
                   <th className="px-2 py-2 text-left">
-                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">NF Reg.</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>NF Reg.</span>
                   </th>
                   <th className="px-2 py-2 text-left">
-                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Matríc.</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Matríc.</span>
                   </th>
                   <th className="px-2 py-2 text-left">
-                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Recol.</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Recol.</span>
                   </th>
                   <th className="px-2 py-2 text-left">
-                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Entr. RI</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Entr. RI</span>
                   </th>
                   <th className="px-2 py-2 text-left">
-                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Receb. RI</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Receb. RI</span>
                   </th>
                   <th className="px-2 py-2 text-center">
-                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Flags</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Flags</span>
                   </th>
                   <th className="px-2 py-2 text-left">
-                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Gatilho</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Gatilho</span>
                   </th>
                   <th className="px-2 py-2 text-right">
                     <SortHeader field="dias">Dias</SortHeader>
                   </th>
                   <th className="px-2 py-2 text-center">
-                    <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Ações</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Ações</span>
                   </th>
                   {showObservacoes && (
                     <th className="px-2 py-2 text-left">
-                      <span className="text-[10px] font-semibold text-orange-800 uppercase tracking-wider">Obs.</span>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Obs.</span>
                     </th>
                   )}
                 </tr>
@@ -393,7 +388,7 @@ export function RegistrosTable({
                 {paged.map((item) => {
                   const isConcluido = item.etapa === 'Concluído';
                   const rowBg = isConcluido ? 'bg-emerald-50' : '';
-                  const cellBg = isConcluido ? 'bg-emerald-50' : 'bg-white';
+                  const cellBg = isConcluido ? 'bg-emerald-50' : 'bg-[var(--bg-card)]';
                   
                   return (
                   <tr

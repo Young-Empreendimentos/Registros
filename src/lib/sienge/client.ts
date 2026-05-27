@@ -106,6 +106,9 @@ export interface SiengeCustomer {
   name: string;
   email?: string;
   emails?: Array<{ email: string }>;
+  personType?: string;
+  createdAt?: string;
+  modifiedAt?: string;
 }
 
 // Interfaces para bulk-data/income API
@@ -253,6 +256,17 @@ export function getMainCustomer(contract: SiengeContract): SiengeContractCustome
 
 export function getMainUnitId(contract: SiengeContract): number | undefined {
   return contract.salesContractUnits.find((u) => u.main)?.id;
+}
+
+/** Busca vínculos contrato → unidade principal via API Sienge (salesContractUnits) */
+export async function fetchContractUnitLinks(): Promise<Map<number, number>> {
+  const contracts = await fetchSalesContracts();
+  const links = new Map<number, number>();
+  for (const contract of contracts) {
+    const unitId = getMainUnitId(contract);
+    if (unitId) links.set(contract.id, unitId);
+  }
+  return links;
 }
 
 export async function testConnection(): Promise<{ success: boolean; message: string; data?: unknown }> {

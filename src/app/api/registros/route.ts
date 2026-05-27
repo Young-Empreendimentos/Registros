@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken, COOKIE_NAME } from '@/lib/auth';
 import { createServiceClient } from '@/lib/supabase/server';
+import { T } from '@/lib/supabase/tables';
 import { computarRegistroCompleto } from '@/lib/calculations';
 import type { Empreendimento, Lote, Contrato, Registro } from '@/types';
 
@@ -60,10 +61,10 @@ export async function GET() {
   const supabase = createServiceClient();
 
   const [empreendimentos, lotes, contratos, registros] = await Promise.all([
-    fetchAll<Empreendimento>(supabase, 'empreendimentos'),
-    fetchAll<Lote>(supabase, 'lotes'),
-    fetchAll<Contrato>(supabase, 'contratos', { column: 'ativo', value: true }),
-    fetchAll<Registro>(supabase, 'registros'),
+    fetchAll<Empreendimento>(supabase, T.empreendimentos),
+    fetchAll<Lote>(supabase, T.lotes),
+    fetchAll<Contrato>(supabase, T.contratos, { column: 'ativo', value: true }),
+    fetchAll<Registro>(supabase, T.registros),
   ]);
 
   const allowedEmps = empreendimentos.filter((e) => ALLOWED_ENTERPRISE_IDS.has(e.sienge_id));

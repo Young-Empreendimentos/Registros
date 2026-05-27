@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServiceClient } from '@/lib/supabase/server';
+import { T } from '@/lib/supabase/tables';
 
 const SIENGE_BASE_URL = process.env.SIENGE_BASE_URL!;
 const SIENGE_USERNAME = process.env.SIENGE_USERNAME!;
@@ -151,10 +152,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const supabase = createServiceClient();
 
     // 1. Buscar todos os recebimentos do SIENGE
     console.log('Buscando recebimentos do SIENGE...');
@@ -163,7 +161,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Buscar todos os contratos ativos no banco
     const { data: contratos, error } = await supabase
-      .from('contratos')
+      .from(T.contratos)
       .select('id, sienge_contract_id, valor_ja_pago')
       .eq('ativo', true);
 
@@ -218,7 +216,7 @@ export async function POST(request: NextRequest) {
       if (Math.abs(valorLiquido - oldValue) > 0.01) {
         // Atualizar no banco
         const { error: updateError } = await supabase
-          .from('contratos')
+          .from(T.contratos)
           .update({ valor_ja_pago: valorLiquido })
           .eq('id', contrato.id);
 

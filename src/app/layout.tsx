@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { YoungLoader } from '@/components/young-loader';
 
 export const metadata: Metadata = {
   title: 'Controle de Registros | Young Empreendimentos',
@@ -15,8 +16,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR" className="dark">
-      <body className="min-h-screen bg-[#0f0f0f] text-zinc-100 antialiased">
+    <html lang="pt-BR">
+      <body className="min-h-screen antialiased">
+        <YoungLoader />
         {children}
       </body>
     </html>

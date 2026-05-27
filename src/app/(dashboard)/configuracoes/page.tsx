@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useProfile } from '@/hooks/use-profile';
+import { useRegistros } from '@/hooks/use-registros';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -134,6 +135,7 @@ export default function ConfiguracoesPage() {
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
 
   const { profile } = useProfile();
+  const { refetch: refetchRegistros } = useRegistros();
   const isGestor = profile?.role === 'gestor';
 
   const fetchUsers = useCallback(async () => {
@@ -334,6 +336,7 @@ export default function ConfiguracoesPage() {
       setSyncing(false);
       abortRef.current = null;
       fetchSyncLogs();
+      void refetchRegistros();
     }
   };
 
@@ -365,7 +368,10 @@ export default function ConfiguracoesPage() {
           Sincronização SIENGE
         </h2>
         <p className="text-orange-700 text-sm mb-4">
-          A sincronização automática roda diariamente às 02h. Use o botão abaixo para sincronizar manualmente.
+          O pipeline automático roda <strong>1x por dia às 02:00</strong> (ingestão Sienge →
+          <code>sienge_*</code> + sync → <code>registros_*</code>). O botão abaixo executa apenas a{' '}
+          <strong>sync</strong> (lê <code>sienge_*</code> e atualiza <code>registros_*</code>), sem
+          chamar a API Sienge.
         </p>
 
         {syncing && (

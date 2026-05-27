@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServiceClient } from '@/lib/supabase/server';
+import { T } from '@/lib/supabase/tables';
 
 export async function GET() {
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const supabase = createServiceClient();
 
     const { data: logs, error } = await supabase
-      .from('sync_logs')
+      .from(T.sync_logs)
       .select('*')
       .order('started_at', { ascending: false })
       .limit(20);

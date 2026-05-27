@@ -1,9 +1,14 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useRegistros } from '@/hooks/use-registros';
 import { useProfile } from '@/hooks/use-profile';
 import { RegistrosTable } from '@/components/data-table/registros-table';
 import { Activity } from 'lucide-react';
+import {
+  contarRegistrosEmAndamento,
+  filtrarRegistrosEmAndamento,
+} from '@/lib/analise';
 
 export default function AtivosPage() {
   const { registros, loading, error, updateRegistro } = useRegistros();
@@ -13,7 +18,7 @@ export default function AtivosPage() {
     await updateRegistro(registroId, updates);
   };
 
-  if (loading) {
+  if (loading && registros.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-8 h-8 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
@@ -29,9 +34,11 @@ export default function AtivosPage() {
     );
   }
 
-  const activeCount = registros.filter(
-    (r) => !['Propriedade Young', 'Vendido', 'Concluído'].includes(r.etapa)
-  ).length;
+  const emAndamento = useMemo(
+    () => filtrarRegistrosEmAndamento(registros),
+    [registros]
+  );
+  const activeCount = contarRegistrosEmAndamento(registros);
 
   return (
     <div className="space-y-6">
@@ -46,11 +53,10 @@ export default function AtivosPage() {
       </div>
 
       <RegistrosTable
-        registros={registros}
+        registros={emAndamento}
         userRole={profile?.role || 'leitor'}
         onUpdate={handleUpdate}
         showObservacoes={true}
-        filterActiveOnly={true}
       />
     </div>
   );

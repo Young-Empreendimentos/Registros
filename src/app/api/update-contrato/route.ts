@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServiceClient } from '@/lib/supabase/server';
+import { T } from '@/lib/supabase/tables';
 
 const SIENGE_BASE_URL = process.env.SIENGE_BASE_URL!;
 const SIENGE_USERNAME = process.env.SIENGE_USERNAME!;
@@ -43,10 +44,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const supabase = createServiceClient();
 
     // Buscar recebimentos
     const baseUrl = SIENGE_BASE_URL.replace('/public/api/v1', '/public/api/bulk-data/v1');
@@ -90,7 +88,7 @@ export async function POST(request: NextRequest) {
 
     // Atualizar no banco
     const { data: updated, error } = await supabase
-      .from('contratos')
+      .from(T.contratos)
       .update({ valor_ja_pago: valorPago })
       .eq('sienge_contract_id', sienge_contract_id)
       .select()

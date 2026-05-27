@@ -2,6 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useRegistros } from '@/hooks/use-registros';
+import { contarRegistrosEmAndamento } from '@/lib/analise';
 import { useProfile } from '@/hooks/use-profile';
 import { RegistrosTable } from '@/components/data-table/registros-table';
 import { useEffect, useState } from 'react';
@@ -28,7 +29,7 @@ export default function EmpreendimentoPage() {
 
   const empRegistros = registros.filter((r) => r.empreendimento.id === empId);
 
-  if (loading) {
+  if (loading && registros.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-4">
@@ -47,9 +48,7 @@ export default function EmpreendimentoPage() {
     );
   }
 
-  const activeCount = empRegistros.filter(
-    (r) => !['Propriedade Young', 'Vendido', 'Concluído'].includes(r.etapa)
-  ).length;
+  const activeCount = contarRegistrosEmAndamento(empRegistros);
 
   const concluidos = empRegistros.filter((r) => r.etapa === 'Concluído').length;
 

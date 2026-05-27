@@ -1,69 +1,128 @@
-import { createClient } from '@supabase/supabase-js';
-import {
-  fetchEnterprises,
-  fetchUnits,
-  fetchSalesContracts,
-  fetchCustomer,
-  fetchIncomeData,
-  getMainCustomer,
-  getMainUnitId,
-  type SiengeContract,
-  type SiengeIncomeItem,
-} from './client';
 import { calcularGatilho, isGatilhoAtingido } from '@/lib/calculations';
+import { createServiceClient } from '@/lib/supabase/server';
+import { R, RPC, T } from '@/lib/supabase/tables';
+import { ALLOWED_ENTERPRISE_IDS } from './constants';
+import {
+  sumValorRecebimentos,
+  fetchContratosVendaTI,
+  fetchContratoClientesTI,
+  fetchClientesMapTI,
+  fetchParcelasReceberTI,
+  fetchUnidadesTI,
+  fetchContractUnitLinksTI,
+  getMainClienteId,
+  isContratoAtivo,
+  type TIParcelaReceber,
+  type TIContratoVenda,
+} from './ti-client';
 
-// Empreendimentos permitidos (sienge_id -> nome):
-// 1    - Parque da Guarda Residence
-// 2    - Jardim do Parque
-// 2003 - Montecarlo
-// 2004 - Ilha dos Açores
-// 2005 - Aurora
-// 2007 - Parque Lorena l
-// 2009 - Parque Lorena II
-// 2010 - Erico Verissimo
-// 2011 - Algarve
-// 2014 - Morada da Coxilha
-const ALLOWED_ENTERPRISE_IDS = new Set([1, 2, 2003, 2004, 2005, 2007, 2009, 2010, 2011, 2014]);
+// Interface para os dados de recebimentos do banco TI
+type TIIncomeData = TIParcelaReceber;
 
-// Mapeamento enterpriseId -> companyId (para busca de recebimentos)
-const ENTERPRISE_COMPANY_MAP: Record<number, number> = {
-  1: 1,     // Parque da Guarda Residence
-  2: 1,     // Jardim do Parque
-  2003: 3,  // Montecarlo
-  2004: 4,  // Ilha dos Açores
-  2005: 5,  // Aurora
-  2007: 7,  // Parque Lorena I
-  2009: 9,  // Parque Lorena II
-  2010: 10, // Erico Verissimo
-  2011: 11, // Algarve
-  2014: 14, // Morada da Coxilha
-};
+// Extrai apenas os dígitos numéricos de um identificador de lote
+// Exemplos:
+//   "173" -> "173"
+//   "173A" -> "173"
+//   "Lote 173" -> "173"
+//   "Lote 02" -> "2"
+//   "CT.36" -> "36"
+//   "ADT.Lote 79" -> "79"
+function extrairNumeroLote(input: string | undefined | null): string {
+  if (!input) return '';
+  const match = input.match(/\d+/);
+  if (!match) return '';
+  return String(parseInt(match[0], 10));
+}
 
-// Calcula valor pago real baseado nos recebimentos (ignora reparcelamentos)
-// Usa grossAmount (Vl. Baixa do relatório SIENGE) somando TODOS os receipts de cada parcela
-function calculateRealPaidValue(
-  incomeItems: SiengeIncomeItem[],
-  companyId: number,
-  unitNumber: string
+// Extrai número + letra opcional do final
+// Exemplos:
+//   "173" -> "173"
+//   "173A" -> "173A"
+//   "Lote 02" -> "2"
+//   "CT.36" -> "36"
+//   "CT.190A" -> "190A"
+//   "190B" -> "190B"
+function extrairNumeroComLetra(input: string | undefined | null): string {
+  if (!input) return '';
+  // Pega número seguido opcionalmente de uma letra
+  const match = input.match(/(\d+)([A-Z]?)/i);
+  if (!match) return '';
+  const num = String(parseInt(match[1], 10));
+  const letra = (match[2] || '').toUpperCase();
+  return num + letra;
+}
+
+// Calcula valor pago real somando receipts[].value onde type = 'Recebimento'
+// (valor da parcela, sem juros e multa)
+// IMPORTANTE: Quando um lote tem múltiplos contratos (ex: 190 e 190A),
+// o TI mantém units[0].name = "190" mas usa document_number = "CT.190" ou "CT.190A".
+// O match é feito identificando o ID alvo (com letra se houver) e filtrando
+// os document_numbers correspondentes.
+function calculateRealPaidValueFromTI(
+  incomeItems: TIIncomeData[],
+  enterpriseId: number,
+  ...loteCandidatos: (string | undefined | null)[]
 ): number {
-  const contractItems = incomeItems.filter(
-    item => item.companyId === companyId && item.documentNumber === unitNumber
-  );
+  // Identifica o ID alvo, priorizando o que tem letra (mais específico)
+  let idAlvoComLetra: string | null = null;
+  let idAlvoSemLetra: string | null = null;
   
-  let valorPago = 0;
-  
-  for (const item of contractItems) {
-    if (item.receipts && item.receipts.length > 0) {
-      // Soma TODOS os receipts da parcela (pode haver múltiplos recebimentos)
-      for (const receipt of item.receipts) {
-        if (receipt.operationTypeName === 'Recebimento') {
-          // Usa grossAmount = Vl. Baixa do relatório de contas recebidas
-          valorPago += receipt.grossAmount || 0;
-        }
-      }
+  for (const candidato of loteCandidatos) {
+    const id = extrairNumeroComLetra(candidato);
+    if (!id) continue;
+    if (/[A-Z]$/i.test(id)) {
+      if (!idAlvoComLetra) idAlvoComLetra = id;
+    } else {
+      if (!idAlvoSemLetra) idAlvoSemLetra = id;
     }
   }
   
+  const idAlvo = idAlvoComLetra || idAlvoSemLetra;
+  if (!idAlvo) return 0;
+  
+  const numAlvo = idAlvo.replace(/[A-Z]$/i, '');
+  const temLetra = /[A-Z]$/i.test(idAlvo);
+
+  // Filtra itens deste empreendimento cujo unit name (número base) bate
+  const itensDoLote = incomeItems.filter(item => {
+    if (item.cost_center_id !== enterpriseId) return false;
+    if (!item.units || item.units.length === 0) return false;
+    return extrairNumeroLote(item.units[0]?.name) === numAlvo;
+  });
+  
+  if (itensDoLote.length === 0) return 0;
+  
+  // Tenta match exato pelo document_number (considerando letra)
+  const matchExato = itensDoLote.filter(item => 
+    extrairNumeroComLetra(item.document_number) === idAlvo
+  );
+  
+  if (matchExato.length > 0) {
+    let valorPago = 0;
+    for (const item of matchExato) {
+      valorPago += sumValorRecebimentos(item.receipts);
+    }
+    return valorPago;
+  }
+  
+  // Sem match exato no document_number
+  // Verifica se há outros document_numbers com letra para esse lote
+  // (isso indica que existem múltiplos contratos para o mesmo lote)
+  const temOutrosComLetra = itensDoLote.some(item => {
+    const docId = extrairNumeroComLetra(item.document_number);
+    return /[A-Z]$/i.test(docId);
+  });
+  
+  if (temOutrosComLetra && temLetra) {
+    // Nosso ID tem letra (ex: 190B) mas o TI não tem CT.190B - contrato não existe
+    return 0;
+  }
+  
+  // Sem ambiguidade - soma todos os itens do lote
+  let valorPago = 0;
+  for (const item of itensDoLote) {
+    valorPago += sumValorRecebimentos(item.receipts);
+  }
   return valorPago;
 }
 
@@ -73,13 +132,6 @@ export type ProgressCallback = (event: {
   percent: number;
 }) => void;
 
-function getServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
-
 export async function runSync(
   onProgress?: ProgressCallback
 ): Promise<{
@@ -87,7 +139,7 @@ export async function runSync(
   message: string;
   details: Record<string, unknown>;
 }> {
-  const supabase = getServiceClient();
+  const supabase = createServiceClient();
   const details: Record<string, unknown> = {};
   let registrosAtualizados = 0;
 
@@ -96,119 +148,108 @@ export async function runSync(
   };
 
   const { data: logEntry } = await supabase
-    .from('sync_logs')
+    .from(T.sync_logs)
     .insert({ status: 'running', registros_atualizados: 0 })
     .select()
     .single();
 
   try {
-    // 1. Fetch enterprises
-    progress('empreendimentos', 'Carregando empreendimentos do SIENGE...', 2);
-    const enterprises = await fetchEnterprises();
+    const allowedIds = Array.from(ALLOWED_ENTERPRISE_IDS);
 
-    const relevantEnterprises = enterprises.filter((ent) => 
-      ALLOWED_ENTERPRISE_IDS.has(ent.id)
-    );
-    details.enterprises_count = relevantEnterprises.length;
+    // 1. Carregar contratos do banco TI (fonte principal de dados cadastrais)
+    progress('contratos', 'Carregando contratos do banco de dados Supabase...', 2);
+    const tiContratos = await fetchContratosVendaTI(allowedIds);
+    details.contracts_count = tiContratos.length;
 
-    for (const ent of relevantEnterprises) {
-      await supabase.from('empreendimentos').upsert(
-        { sienge_id: ent.id, nome: ent.name },
+    // Empreendimentos derivados dos contratos TI
+    const empMap = new Map<number, string>();
+    for (const c of tiContratos) {
+      if (!empMap.has(c.enterprise_id)) {
+        empMap.set(c.enterprise_id, c.enterprise_name);
+      }
+    }
+    for (const [id, name] of empMap) {
+      await supabase.from(T.empreendimentos).upsert(
+        { sienge_id: id, nome: name },
         { onConflict: 'sienge_id' }
       );
     }
-    progress('empreendimentos', `${relevantEnterprises.length} empreendimentos carregados`, 8);
+    details.enterprises_count = empMap.size;
+    progress('empreendimentos', `${empMap.size} empreendimentos carregados do Supabase`, 8);
 
-    // 2. Fetch units per enterprise
-    let totalUnits = 0;
-    const skippedEnterprises: number[] = [];
-    const enterprisesWithUnits = relevantEnterprises;
+    // 2. Unidades do banco TI (populadas pela ingestão diária da API Sienge)
+    progress('unidades', 'Carregando unidades do banco TI...', 10);
+    const tiUnidades = await fetchUnidadesTI(allowedIds);
+    details.units_count = tiUnidades.length;
 
-    for (let i = 0; i < enterprisesWithUnits.length; i++) {
-      const ent = enterprisesWithUnits[i];
-      const pct = 8 + Math.round((i / enterprisesWithUnits.length) * 25);
-      progress('unidades', `Carregando unidades: ${ent.name} (${i + 1}/${enterprisesWithUnits.length})`, pct);
+    const unitsByEnterprise = new Map<number, typeof tiUnidades>();
+    for (const unit of tiUnidades) {
+      const list = unitsByEnterprise.get(unit.enterprise_id) || [];
+      list.push(unit);
+      unitsByEnterprise.set(unit.enterprise_id, list);
+    }
 
-      let units;
-      try {
-        units = await fetchUnits(ent.id);
-      } catch {
-        skippedEnterprises.push(ent.id);
-        continue;
-      }
-      totalUnits += units.length;
-
+    for (const [entId, units] of unitsByEnterprise) {
       const { data: empRow } = await supabase
-        .from('empreendimentos')
+        .from(T.empreendimentos)
         .select('id')
-        .eq('sienge_id', ent.id)
+        .eq('sienge_id', entId)
         .single();
 
       if (!empRow) continue;
 
       for (const unit of units) {
-        // Extrair apenas o número do lote (remove prefixos como "Lote", "lote", etc.)
         let numeroLote = unit.name;
-        
-        // Se contém "Lote" seguido de número, extrai só o número
         const loteMatch = numeroLote.match(/[Ll]ote\s*(\d+)/);
         if (loteMatch) {
           numeroLote = loteMatch[1];
         } else {
-          // Se é apenas um número, mantém
           const onlyNumber = numeroLote.match(/^(\d+)$/);
           if (onlyNumber) {
             numeroLote = onlyNumber[1];
           } else {
-            // Se não é um lote válido (ex: "The Ecko 38"), pula
             const hasNumber = numeroLote.match(/\d+/);
             if (!hasNumber || numeroLote.match(/[A-Za-z]{2,}/)) {
-              // Contém texto que não é "Lote" - provavelmente não é um lote válido
               continue;
             }
-            // Extrai o número se houver
             numeroLote = hasNumber[0];
           }
         }
-        
-        await supabase.from('lotes').upsert(
+
+        await supabase.from(T.lotes).upsert(
           {
             sienge_unit_id: unit.id,
             numero: numeroLote,
             empreendimento_id: empRow.id,
-            valor_avista: unit.terrainValue || 0,
+            valor_avista: unit.terrain_value || 0,
           },
           { onConflict: 'sienge_unit_id' }
         );
       }
     }
-    details.units_count = totalUnits;
-    if (skippedEnterprises.length > 0) {
-      details.skipped_enterprises = skippedEnterprises;
-    }
-    progress('unidades', `${totalUnits} unidades carregadas`, 35);
+    progress('unidades', `${tiUnidades.length} unidades carregadas do Supabase`, 35);
 
-    // 3. Fetch all sales contracts
-    progress('contratos', 'Carregando contratos de venda do SIENGE...', 37);
-    let contracts: SiengeContract[] = [];
+    // 3. Vínculos contrato-unidade do banco TI
+    progress('vinculos', 'Carregando vínculos contrato-unidade do Supabase...', 37);
+    let contractUnitLinks: Map<number, number>;
     try {
-      contracts = await fetchSalesContracts();
+      contractUnitLinks = await fetchContractUnitLinksTI();
+      details.contract_unit_links = contractUnitLinks.size;
     } catch (err) {
-      details.contracts_error = err instanceof Error ? err.message : 'Erro ao buscar contratos';
+      details.contract_unit_links_error = err instanceof Error ? err.message : 'Erro ao buscar vínculos';
+      contractUnitLinks = new Map();
     }
-    details.contracts_count = contracts.length;
-    progress('contratos', `${contracts.length} contratos carregados`, 42);
+    progress('vinculos', `${contractUnitLinks.size} vínculos contrato-unidade carregados`, 42);
 
-    // Group active contracts by unit ID
-    const activeContractsByUnit = new Map<number, SiengeContract>();
-    for (const contract of contracts) {
-      if (contract.situation === 'Cancelado' || contract.cancellationDate) continue;
-      const unitId = getMainUnitId(contract);
-      if (unitId) {
-        const existing = activeContractsByUnit.get(unitId);
-        if (!existing || new Date(contract.contractDate) > new Date(existing.contractDate)) {
-          activeContractsByUnit.set(unitId, contract);
-        }
+    // Agrupar contratos ativos por unidade (contrato mais recente por lote)
+    const activeContractsByUnit = new Map<number, TIContratoVenda>();
+    for (const contrato of tiContratos) {
+      if (!isContratoAtivo(contrato)) continue;
+      const unitId = contractUnitLinks.get(contrato.id);
+      if (!unitId) continue;
+      const existing = activeContractsByUnit.get(unitId);
+      if (!existing || new Date(contrato.contract_date) > new Date(existing.contract_date)) {
+        activeContractsByUnit.set(unitId, contrato);
       }
     }
 
@@ -216,121 +257,97 @@ export async function runSync(
     details.active_contracts = activeContracts.length;
     progress('processando', `Processando ${activeContracts.length} contratos ativos...`, 45);
 
-    // Buscar todos os recebimentos via bulk-data/income
-    progress('recebimentos', 'Carregando recebimentos do SIENGE (bulk-data)...', 46);
-    let allIncomeData: SiengeIncomeItem[] = [];
+    // 4. Clientes e recebimentos do banco TI
+    progress('clientes', 'Carregando clientes do banco de dados Supabase...', 46);
+    const [contratoClientes, clientesMap] = await Promise.all([
+      fetchContratoClientesTI(),
+      fetchClientesMapTI(),
+    ]);
+    details.clientes_count = clientesMap.size;
+    progress('clientes', `${clientesMap.size} clientes carregados do Supabase`, 47);
+
+    progress('recebimentos', 'Carregando recebimentos do banco de dados Supabase...', 48);
+    let allIncomeData: TIIncomeData[] = [];
     try {
-      const startDate = '2020-01-01';
-      const endDate = new Date().toISOString().split('T')[0];
-      allIncomeData = await fetchIncomeData(startDate, endDate);
+      allIncomeData = await fetchParcelasReceberTI(allowedIds);
       details.income_count = allIncomeData.length;
     } catch (err) {
-      details.income_error = err instanceof Error ? err.message : 'Erro ao buscar recebimentos';
+      details.income_error = err instanceof Error ? err.message : 'Erro ao buscar recebimentos do TI';
     }
-    progress('recebimentos', `${allIncomeData.length} recebimentos carregados`, 48);
+    progress('recebimentos', `${allIncomeData.length} parcelas carregadas do Supabase`, 50);
 
-    // Pre-load existing emails from DB to avoid redundant API calls
-    const { data: existingContratos } = await supabase
-      .from('contratos')
-      .select('sienge_contract_id, cliente_email');
-    const emailCache = new Map<number, string>();
-    for (const c of existingContratos || []) {
-      if (c.cliente_email) {
-        emailCache.set(c.sienge_contract_id, c.cliente_email);
-      }
-    }
-
-    // Deduplicate customer IDs to minimize API calls
-    const customerEmailMap = new Map<number, string>();
-    const uniqueCustomerIds: number[] = [];
-    for (const [, contract] of activeContracts) {
-      const mainCustomer = getMainCustomer(contract);
-      if (!mainCustomer) continue;
-      const cached = emailCache.get(contract.id);
-      if (cached) {
-        customerEmailMap.set(mainCustomer.id, cached);
-      } else if (!customerEmailMap.has(mainCustomer.id) && !uniqueCustomerIds.includes(mainCustomer.id)) {
-        uniqueCustomerIds.push(mainCustomer.id);
-      }
-    }
-
-    // Fetch only unknown customer emails
-    if (uniqueCustomerIds.length > 0) {
-      progress('emails', `Buscando e-mails de ${uniqueCustomerIds.length} clientes novos...`, 48);
-      for (let i = 0; i < uniqueCustomerIds.length; i++) {
-        const custId = uniqueCustomerIds[i];
-        if (i % 10 === 0) {
-          const pct = 48 + Math.round((i / uniqueCustomerIds.length) * 20);
-          progress('emails', `Buscando e-mails: ${i + 1}/${uniqueCustomerIds.length}`, pct);
-        }
-        try {
-          const customer = await fetchCustomer(custId);
-          customerEmailMap.set(custId, customer.email || '');
-        } catch {
-          customerEmailMap.set(custId, '');
-        }
-      }
-    }
-    progress('emails', 'E-mails carregados', 70);
-
-    // 4. Process each active contract
+    // 5. Processar cada contrato ativo
     for (let i = 0; i < activeContracts.length; i++) {
-      const [unitSiengeId, contract] = activeContracts[i];
+      const [unitSiengeId, tiContrato] = activeContracts[i];
       if (i % 20 === 0) {
-        const pct = 70 + Math.round((i / activeContracts.length) * 22);
+        const pct = 50 + Math.round((i / activeContracts.length) * 42);
         progress('salvando', `Salvando contratos: ${i + 1}/${activeContracts.length}`, pct);
       }
 
-      const mainCustomer = getMainCustomer(contract);
-      if (!mainCustomer) continue;
-
-      const clienteEmail = customerEmailMap.get(mainCustomer.id) || '';
-      
-      // Calcular valor pago usando recebimentos reais (ignora reparcelamentos)
-      const companyId = ENTERPRISE_COMPANY_MAP[contract.enterpriseId] || contract.companyId;
-      const unitNumber = contract.number;
-      const paidValue = allIncomeData.length > 0 
-        ? calculateRealPaidValue(allIncomeData, companyId, unitNumber)
-        : 0;
+      const clienteId = getMainClienteId(contratoClientes, tiContrato.id);
+      const cliente = clienteId ? clientesMap.get(clienteId) : null;
+      const clienteNome = cliente?.name || '';
+      const clienteEmail = cliente?.email || '';
 
       const { data: loteRow } = await supabase
-        .from('lotes')
-        .select('id')
+        .from(T.lotes)
+        .select('id, numero')
         .eq('sienge_unit_id', unitSiengeId)
-        .single();
+        .maybeSingle();
 
       if (!loteRow) continue;
 
-      const { data: contratoRow } = await supabase
-        .from('contratos')
-        .upsert(
-          {
-            sienge_contract_id: contract.id,
-            lote_id: loteRow.id,
-            cliente_nome: mainCustomer.name,
-            cliente_email: clienteEmail,
-            valor_total: contract.totalSellingValue,
-            valor_ja_pago: paidValue,
-            data_contrato: contract.contractDate,
-            ultima_atualizacao_valor: new Date().toISOString(),
-            ativo: true,
-            numero_contrato: contract.number,
-          },
-          { onConflict: 'sienge_contract_id' }
-        )
-        .select()
-        .single();
+      const enterpriseId = tiContrato.enterprise_id;
+      const paidValue = allIncomeData.length > 0
+        ? calculateRealPaidValueFromTI(allIncomeData, enterpriseId, tiContrato.number, loteRow.numero)
+        : 0;
 
+      const { data: existingContrato } = await supabase
+        .from(T.contratos)
+        .select('id, valor_ja_pago')
+        .eq('sienge_contract_id', tiContrato.id)
+        .maybeSingle();
+
+      const valorPagoFinal = paidValue > 0
+        ? paidValue
+        : (existingContrato?.valor_ja_pago ?? 0);
+
+      const payload: Record<string, unknown> = {
+        sienge_contract_id: tiContrato.id,
+        lote_id: loteRow.id,
+        cliente_nome: clienteNome,
+        cliente_email: clienteEmail,
+        valor_total: tiContrato.total_selling_value,
+        valor_ja_pago: valorPagoFinal,
+        data_contrato: tiContrato.contract_date,
+        ativo: true,
+        numero_contrato: tiContrato.number,
+      };
+
+      if (paidValue > 0 || !existingContrato) {
+        payload.ultima_atualizacao_valor = new Date().toISOString();
+      }
+
+      const { data: contratoRow, error: upsertError } = await supabase
+        .from(T.contratos)
+        .upsert(payload, { onConflict: 'sienge_contract_id' })
+        .select()
+        .maybeSingle();
+
+      if (upsertError) {
+        console.error(`Erro ao salvar contrato ${tiContrato.id}:`, upsertError.message);
+        continue;
+      }
       if (!contratoRow) continue;
 
       const { data: existingRegistro } = await supabase
-        .from('registros')
+        .from(T.registros)
         .select('id, data_gatilho')
         .eq('lote_id', loteRow.id)
-        .single();
+        .maybeSingle();
 
       if (!existingRegistro) {
-        await supabase.from('registros').insert({
+        await supabase.from(T.registros).insert({
           lote_id: loteRow.id,
           contrato_id: contratoRow.id,
         });
@@ -342,7 +359,7 @@ export async function runSync(
           updates.data_gatilho = new Date().toISOString().split('T')[0];
         }
         await supabase
-          .from('registros')
+          .from(T.registros)
           .update(updates)
           .eq('id', existingRegistro.id);
       }
@@ -356,17 +373,17 @@ export async function runSync(
     const activeSiengeIds = Array.from(activeContractsByUnit.values()).map((c) => c.id);
     if (activeSiengeIds.length > 0) {
       await supabase
-        .from('contratos')
+        .from(T.contratos)
         .update({ ativo: false })
         .not('sienge_contract_id', 'in', `(${activeSiengeIds.join(',')})`);
     }
 
     // 6. Create registros for lotes without one
     progress('finalizando', 'Criando registros para novos lotes...', 96);
-    const { data: lotesWithoutRegistro } = await supabase.rpc('get_lotes_without_registros');
+    const { data: lotesWithoutRegistro } = await supabase.rpc(RPC.get_lotes_without_registros);
     if (lotesWithoutRegistro) {
       for (const lote of lotesWithoutRegistro) {
-        await supabase.from('registros').insert({
+        await supabase.from(T.registros).insert({
           lote_id: lote.id,
           contrato_id: null,
         });
@@ -374,13 +391,13 @@ export async function runSync(
       details.new_registros = lotesWithoutRegistro.length;
     }
 
-    // 7. Atualizar valores pagos de TODOS os contratos existentes usando bulk-data/income
+    // 7. Atualizar valores pagos de TODOS os contratos existentes usando dados do banco TI
     // Isso garante que mesmo contratos que não vieram na busca de sales-contracts sejam atualizados
     if (allIncomeData.length > 0) {
       progress('valores', 'Atualizando valores pagos de todos os contratos...', 97);
       
       const { data: todosContratos } = await supabase
-        .from('contratos')
+        .from(T.contratos)
         .select('id, sienge_contract_id, valor_ja_pago, numero_contrato, lotes(numero, empreendimentos(sienge_id))')
         .eq('ativo', true);
 
@@ -388,23 +405,33 @@ export async function runSync(
       
       if (todosContratos) {
         for (const contrato of todosContratos) {
-          const lote = contrato.lotes as { numero: string; empreendimentos: { sienge_id: number } } | null;
-          if (!lote?.empreendimentos?.sienge_id) continue;
+          type LoteJoin = {
+            numero: string;
+            registros_empreendimentos: { sienge_id: number };
+          };
+          const lote = (contrato as Record<string, unknown>)[R.lotes] as LoteJoin | null;
+          if (!lote?.registros_empreendimentos?.sienge_id) continue;
+
+          const enterpriseId = lote.registros_empreendimentos.sienge_id;
+          const numeroContrato = (contrato as { numero_contrato?: string }).numero_contrato;
           
-          const enterpriseId = lote.empreendimentos.sienge_id;
-          const companyId = ENTERPRISE_COMPANY_MAP[enterpriseId];
-          // Usa numero_contrato (ex: "221B") se disponível, senão usa numero do lote (ex: "221")
-          const documentNumber = (contrato as { numero_contrato?: string }).numero_contrato || lote.numero;
+          if (!numeroContrato && !lote.numero) continue;
           
-          if (!companyId || !documentNumber) continue;
-          
-          const valorCalculado = calculateRealPaidValue(allIncomeData, companyId, documentNumber);
+          // Passa AMBOS como candidatos para garantir match
+          const valorCalculado = calculateRealPaidValueFromTI(
+            allIncomeData,
+            enterpriseId,
+            numeroContrato,
+            lote.numero
+          );
           const valorAtual = contrato.valor_ja_pago || 0;
           
-          // Só atualiza se houver diferença significativa
-          if (Math.abs(valorCalculado - valorAtual) > 0.01) {
+          // Só atualiza se:
+          // 1. O valor calculado é maior que 0 (há dados no TI)
+          // 2. Há diferença significativa em relação ao valor atual
+          if (valorCalculado > 0 && Math.abs(valorCalculado - valorAtual) > 0.01) {
             await supabase
-              .from('contratos')
+              .from(T.contratos)
               .update({ 
                 valor_ja_pago: valorCalculado,
                 ultima_atualizacao_valor: new Date().toISOString()
@@ -422,7 +449,7 @@ export async function runSync(
     // Update log
     if (logEntry) {
       await supabase
-        .from('sync_logs')
+        .from(T.sync_logs)
         .update({
           status: 'success',
           finished_at: new Date().toISOString(),
@@ -445,7 +472,7 @@ export async function runSync(
 
     if (logEntry) {
       await supabase
-        .from('sync_logs')
+        .from(T.sync_logs)
         .update({
           status: 'error',
           finished_at: new Date().toISOString(),

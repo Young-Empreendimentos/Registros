@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
+import { T } from '@/lib/supabase/tables';
 import { hashPassword, signToken, COOKIE_NAME } from '@/lib/auth';
 
 export async function GET() {
   const supabase = createServiceClient();
   const { count } = await supabase
-    .from('usuarios')
+    .from(T.usuarios)
     .select('*', { count: 'exact', head: true });
 
   return NextResponse.json({ needsSetup: (count || 0) === 0 });
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
   const supabase = createServiceClient();
 
   const { count } = await supabase
-    .from('usuarios')
+    .from(T.usuarios)
     .select('*', { count: 'exact', head: true });
 
   if ((count || 0) > 0) {
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
   const senhaHash = await hashPassword(password);
 
   const { data: user, error } = await supabase
-    .from('usuarios')
+    .from(T.usuarios)
     .insert({
       nome,
       email: email.toLowerCase().trim(),

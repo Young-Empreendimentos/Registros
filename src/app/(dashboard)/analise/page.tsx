@@ -5,8 +5,8 @@ import { useRegistros } from '@/hooks/use-registros';
 import { useProfile } from '@/hooks/use-profile';
 import { Input } from '@/components/ui/input';
 import { MultiSelect } from '@/components/ui/multi-select';
-import { EtapaBadge } from '@/components/data-table/etapa-badge';
 import { InlineTextEdit } from '@/components/data-table/inline-edit';
+import { InlineEtapaSelect } from '@/components/data-table/inline-etapa-select';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
   Search,
@@ -15,31 +15,16 @@ import {
   BarChart3,
 } from 'lucide-react';
 import type { Etapa } from '@/types';
+import {
+  ETAPAS_ANALISE,
+  getEtapaAnalise,
+  getAndamento,
+  isRegistroEmAndamento,
+  contarRegistrosEmAndamento,
+} from '@/lib/analise';
 
 type SortField = 'lote' | 'empreendimento' | 'cliente' | 'dias' | 'etapa';
 type SortDir = 'asc' | 'desc';
-
-const ETAPAS_EM_ANDAMENTO: Etapa[] = [
-  'Com pendências',
-  'Aguardando conclusão de registro +30 dias',
-  'Aguardando conclusão de registro',
-  'Solicitar ITBI',
-  'Aguardando emissão guia ITBI',
-  'Pagar ITBI',
-  'ITBI pago/coletar assinaturas',
-  'Gatilho atingido',
-];
-
-const ALL_ETAPAS: Etapa[] = [
-  'Com pendências',
-  'Aguardando conclusão de registro +30 dias',
-  'Aguardando conclusão de registro',
-  'Solicitar ITBI',
-  'Aguardando emissão guia ITBI',
-  'Pagar ITBI',
-  'ITBI pago/coletar assinaturas',
-  'Gatilho atingido',
-];
 
 export default function AnalisePage() {
   const { registros, loading, error, updateRegistro } = useRegistros();
@@ -54,11 +39,7 @@ export default function AnalisePage() {
   const canEdit = profile?.role !== 'leitor';
 
   const emAndamento = useMemo(() => {
-    return registros.filter((r) => 
-      ETAPAS_EM_ANDAMENTO.includes(r.etapa) &&
-      !r.registro.segurar_registro &&
-      !r.registro.financiamento_caixa
-    );
+    return registros.filter(isRegistroEmAndamento);
   }, [registros]);
 
   const empreendimentos = useMemo(() => {
@@ -66,8 +47,14 @@ export default function AnalisePage() {
     return Array.from(set).sort();
   }, [emAndamento]);
 
-  const etapaOptions = useMemo(() => ALL_ETAPAS.map((e) => ({ value: e, label: e })), []);
-  const empOptions = useMemo(() => empreendimentos.map((e) => ({ value: e, label: e })), [empreendimentos]);
+  const etapaOptions = useMemo(
+    () => ETAPAS_ANALISE.map((e) => ({ value: e, label: e })),
+    []
+  );
+  const empOptions = useMemo(
+    () => empreendimentos.map((e) => ({ value: e, label: e })),
+    [empreendimentos]
+  );
 
   const filtered = useMemo(() => {
     let data = [...emAndamento];
@@ -78,12 +65,13 @@ export default function AnalisePage() {
         (r) =>
           r.lote.numero.toLowerCase().includes(term) ||
           r.contrato?.cliente_nome.toLowerCase().includes(term) ||
-          r.empreendimento.nome.toLowerCase().includes(term)
+          r.empreendimento.nome.toLowerCase().includes(term) ||
+          (getAndamento(r.registro) || '').toLowerCase().includes(term)
       );
     }
 
     if (etapaFilters.length > 0) {
-      data = data.filter((r) => etapaFilters.includes(r.etapa));
+      data = data.filter((r) => etapaFilters.includes(getEtapaAnalise(r)));
     }
 
     if (empFilters.length > 0) {
@@ -106,7 +94,9 @@ export default function AnalisePage() {
           cmp = (a.dias || 0) - (b.dias || 0);
           break;
         case 'etapa':
-          cmp = ALL_ETAPAS.indexOf(a.etapa) - ALL_ETAPAS.indexOf(b.etapa);
+          cmp =
+            ETAPAS_ANALISE.indexOf(getEtapaAnalise(a)) -
+            ETAPAS_ANALISE.indexOf(getEtapaAnalise(b));
           break;
       }
       return sortDir === 'asc' ? cmp : -cmp;
@@ -142,7 +132,7 @@ export default function AnalisePage() {
     await updateRegistro(registroId, updates);
   };
 
-  if (loading) {
+  if (loading && registros.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-4">
@@ -163,18 +153,19 @@ export default function AnalisePage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <BarChart3 className="w-6 h-6 text-orange-600" />
         <div>
           <h1 className="text-2xl font-bold text-orange-950">Análise</h1>
           <p className="text-orange-700 text-sm">
-            {emAndamento.length} registro(s) em andamento
+            {contarRegistrosEmAndamento(registros)} registro(s) em andamento
+          </p>
+          <p className="text-orange-600/80 text-xs mt-0.5">
+            Etapa e andamento aqui são independentes da etapa automática nas outras abas.
           </p>
         </div>
       </div>
 
-      {/* Filters */}
       <div className="bg-white rounded-xl border border-orange-200 p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
@@ -217,7 +208,6 @@ export default function AnalisePage() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="rounded-xl border border-orange-200 bg-white overflow-hidden shadow-sm">
         <ScrollArea className="w-full">
           <div className="min-w-[900px]">
@@ -236,57 +226,76 @@ export default function AnalisePage() {
                   <th className="px-4 py-3 text-center w-[120px]">
                     <SortHeader field="dias">Dias em Atraso</SortHeader>
                   </th>
-                  <th className="px-4 py-3 text-left w-[250px]">
-                    <SortHeader field="etapa">Etapa</SortHeader>
+                  <th className="px-4 py-3 text-left w-[280px]">
+                    <SortHeader field="etapa">Etapa (análise)</SortHeader>
                   </th>
                   <th className="px-4 py-3 text-left min-w-[300px]">
-                    <span className="text-xs font-semibold text-orange-800 uppercase tracking-wider">Andamento</span>
+                    <span className="text-xs font-semibold text-orange-800 uppercase tracking-wider">
+                      Andamento
+                    </span>
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((item) => (
-                  <tr
-                    key={item.registro.id}
-                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-4 py-3 text-gray-900 font-medium">
-                      {item.lote.numero}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700">
-                      {item.empreendimento.nome}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700">
-                      {item.contrato?.cliente_nome || '-'}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {item.dias !== null ? (
-                        <span className={
-                          item.dias > 180 
-                            ? 'text-red-600 font-bold' 
-                            : item.dias > 60 
-                              ? 'text-amber-600 font-semibold' 
-                              : 'text-gray-600'
-                        }>
-                          {item.dias}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <EtapaBadge etapa={item.etapa} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <InlineTextEdit
-                        value={item.registro.observacoes}
-                        onSave={async (v) => handleUpdate(item.registro.id, { observacoes: v || null })}
-                        disabled={!canEdit}
-                        placeholder="Adicionar observação..."
-                      />
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map((item) => {
+                  const etapaExibida = getEtapaAnalise(item);
+                  const andamento = getAndamento(item.registro);
+
+                  return (
+                    <tr
+                      key={item.registro.id}
+                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-4 py-3 text-gray-900 font-medium">
+                        {item.lote.numero}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {item.empreendimento.nome}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {item.contrato?.cliente_nome || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {item.dias !== null ? (
+                          <span
+                            className={
+                              item.dias > 180
+                                ? 'text-red-600 font-bold'
+                                : item.dias > 60
+                                  ? 'text-amber-600 font-semibold'
+                                  : 'text-gray-600'
+                            }
+                          >
+                            {item.dias}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <InlineEtapaSelect
+                          value={etapaExibida}
+                          manual={item.registro.etapa_analise ?? null}
+                          options={ETAPAS_ANALISE}
+                          disabled={!canEdit}
+                          onSave={async (etapaAnalise) =>
+                            handleUpdate(item.registro.id, { etapa_analise: etapaAnalise })
+                          }
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <InlineTextEdit
+                          value={andamento}
+                          onSave={async (v) =>
+                            handleUpdate(item.registro.id, { andamento: v || null })
+                          }
+                          disabled={!canEdit}
+                          placeholder="Descrever andamento..."
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
 
                 {filtered.length === 0 && (
                   <tr>

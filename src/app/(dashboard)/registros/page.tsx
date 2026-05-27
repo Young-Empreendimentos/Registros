@@ -2,6 +2,7 @@
 
 import { useRegistros } from '@/hooks/use-registros';
 import { useProfile } from '@/hooks/use-profile';
+import { contarRegistrosEmAndamento } from '@/lib/analise';
 import { RegistrosTable } from '@/components/data-table/registros-table';
 import type { RegistroCompleto } from '@/types';
 
@@ -72,12 +73,12 @@ export default function RegistrosPage() {
     }
   };
 
-  if (loading) {
+  if (loading && registros.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-[#FE5009] border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-500 text-sm">Carregando registros...</p>
+          <div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Carregando registros...</p>
         </div>
       </div>
     );
@@ -86,9 +87,9 @@ export default function RegistrosPage() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <p className="text-red-500 text-sm">{error}</p>
-          <p className="text-gray-500 text-xs mt-2">Verifique se o banco de dados foi configurado corretamente.</p>
+        <div className="text-center alert alert-danger">
+          <p className="text-sm">{error}</p>
+          <p className="text-xs mt-2">Verifique se o banco de dados foi configurado corretamente.</p>
         </div>
       </div>
     );
@@ -96,37 +97,30 @@ export default function RegistrosPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Registros</h1>
-          <p className="text-gray-500 text-sm">
-            Controle completo de todos os lotes e registros
-          </p>
-        </div>
+      <div>
+        <h1>Registros</h1>
+        <p className="page-description">
+          Controle completo de todos os lotes e registros
+        </p>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <div className="quick-cards-grid">
         {[
-          { label: 'Total', value: registros.length, color: 'text-gray-900', borderColor: 'border-l-[#FE5009]' },
-          { label: 'Prop. Young', value: registros.filter((r) => r.etapa === 'Propriedade Young').length, color: 'text-gray-600', borderColor: 'border-l-gray-400' },
-          { label: 'Vendido', value: registros.filter((r) => r.etapa === 'Vendido').length, color: 'text-blue-600', borderColor: 'border-l-blue-500' },
-          { label: 'Em Andamento', value: registros.filter((r) => !['Propriedade Young', 'Vendido', 'Concluído'].includes(r.etapa)).length, color: 'text-[#FE5009]', borderColor: 'border-l-[#FE5009]' },
-          { label: 'Concluído', value: registros.filter((r) => r.etapa === 'Concluído').length, color: 'text-emerald-600', borderColor: 'border-l-emerald-500' },
-          { label: 'Pendências', value: registros.filter((r) => r.etapa === 'Com pendências').length, color: 'text-red-600', borderColor: 'border-l-red-500' },
-        ].map(({ label, value, color, borderColor }) => (
-          <div
-            key={label}
-            className={`bg-white border border-gray-200 ${borderColor} border-l-4 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow`}
-          >
-            <p className="text-gray-500 text-xs font-medium mb-1">{label}</p>
-            <p className={`text-2xl font-bold ${color}`}>{value}</p>
+          { label: 'Total', value: registros.length },
+          { label: 'Prop. Young', value: registros.filter((r) => r.etapa === 'Propriedade Young').length },
+          { label: 'Vendido', value: registros.filter((r) => r.etapa === 'Vendido').length },
+          { label: 'Em Andamento', value: contarRegistrosEmAndamento(registros) },
+          { label: 'Concluído', value: registros.filter((r) => r.etapa === 'Concluído').length },
+          { label: 'Pendências', value: registros.filter((r) => r.etapa === 'Com pendências').length },
+        ].map(({ label, value }) => (
+          <div key={label} className="stat-card">
+            <p className="stat-label">{label}</p>
+            <p className="stat-value">{value}</p>
           </div>
         ))}
       </div>
 
-      {/* Table */}
+      <div className="data-table-shell">
       <RegistrosTable
         registros={registros}
         userRole={profile?.role || 'leitor'}
@@ -135,6 +129,7 @@ export default function RegistrosPage() {
         onSendOP={handleSendOP}
         onSendMatricula={handleSendMatricula}
       />
+      </div>
     </div>
   );
 }

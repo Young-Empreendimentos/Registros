@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useProfile } from '@/hooks/use-profile';
+import { useComprovantes } from '@/contexts/comprovantes-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,29 +26,8 @@ import { DocumentPreview } from '@/components/document-preview';
 import { FileCheck, Plus, ExternalLink, Eye } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
-interface ComprovanteRow {
-  id: string;
-  url: string;
-  descricao: string | null;
-  created_at: string;
-  lote_id: string;
-  registro_id: string;
-  uploaded_by: string;
-  lote_numero?: string;
-  empreendimento_nome?: string;
-}
-
-interface LoteOption {
-  id: string;
-  numero: string;
-  empreendimento: string;
-  registro_id: string;
-}
-
 export default function ComprovantesPage() {
-  const [comprovantes, setComprovantes] = useState<ComprovanteRow[]>([]);
-  const [lotes, setLotes] = useState<LoteOption[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { comprovantes, lotes, loading, refetch } = useComprovantes();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedLote, setSelectedLote] = useState<string>('');
   const [url, setUrl] = useState('');
@@ -57,26 +37,6 @@ export default function ComprovantesPage() {
 
   const { profile } = useProfile();
   const canEdit = profile?.role !== 'leitor';
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/comprovantes');
-      if (!res.ok) throw new Error('Erro ao carregar comprovantes');
-      const data = await res.json();
-      setComprovantes(data.comprovantes || []);
-      setLotes(data.lotes || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const handleAdd = async () => {
     if (!selectedLote || !url) return;
@@ -101,7 +61,7 @@ export default function ComprovantesPage() {
       setSelectedLote('');
       setUrl('');
       setDescricao('');
-      fetchData();
+      void refetch();
     } catch (err) {
       console.error(err);
     } finally {
@@ -185,7 +145,7 @@ export default function ComprovantesPage() {
       </div>
 
       {/* Comprovantes List */}
-      {loading ? (
+      {loading && comprovantes.length === 0 ? (
         <div className="flex items-center justify-center h-48">
           <div className="w-8 h-8 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
         </div>

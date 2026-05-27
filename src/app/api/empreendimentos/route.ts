@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken, COOKIE_NAME } from '@/lib/auth';
 import { createServiceClient } from '@/lib/supabase/server';
+import { T } from '@/lib/supabase/tables';
 
 // Empreendimentos permitidos (sienge_id -> nome):
 // 1    - Parque da Guarda Residence
@@ -29,7 +30,7 @@ export async function GET() {
 
   const supabase = createServiceClient();
   const { data, error } = await supabase
-    .from('empreendimentos')
+    .from(T.empreendimentos)
     .select('*')
     .in('sienge_id', ALLOWED_ENTERPRISE_IDS)
     .order('nome');

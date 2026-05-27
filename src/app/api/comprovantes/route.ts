@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken, COOKIE_NAME } from '@/lib/auth';
 import { createServiceClient } from '@/lib/supabase/server';
+import { T } from '@/lib/supabase/tables';
 
 // Empreendimentos permitidos (sienge_id -> nome):
 // 1    - Parque da Guarda Residence
@@ -30,10 +31,10 @@ export async function GET() {
   const supabase = createServiceClient();
 
   const [{ data: compData }, { data: lotesData }, { data: empsData }, { data: regsData }] = await Promise.all([
-    supabase.from('comprovantes').select('*').order('created_at', { ascending: false }),
-    supabase.from('lotes').select('*'),
-    supabase.from('empreendimentos').select('*'),
-    supabase.from('registros').select('id, lote_id'),
+    supabase.from(T.comprovantes).select('*').order('created_at', { ascending: false }),
+    supabase.from(T.lotes).select('*'),
+    supabase.from(T.empreendimentos).select('*'),
+    supabase.from(T.registros).select('id, lote_id'),
   ]);
 
   const allowedEmps = (empsData || []).filter((e: { sienge_id: number }) => 
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = createServiceClient();
-  const { error } = await supabase.from('comprovantes').insert({
+  const { error } = await supabase.from(T.comprovantes).insert({
     registro_id,
     lote_id,
     url,

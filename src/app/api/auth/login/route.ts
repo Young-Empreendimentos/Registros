@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
+import { T } from '@/lib/supabase/tables';
 import { verifyPassword, signToken, COOKIE_NAME } from '@/lib/auth';
 
 export async function POST(request: Request) {
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
 
   const supabase = createServiceClient();
   const { data: user, error } = await supabase
-    .from('usuarios')
+    .from(T.usuarios)
     .select('*')
     .eq('email', email.toLowerCase().trim())
     .eq('ativo', true)

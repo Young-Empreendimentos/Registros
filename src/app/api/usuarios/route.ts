@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
+import { T } from '@/lib/supabase/tables';
 import { verifyToken, hashPassword, COOKIE_NAME } from '@/lib/auth';
 
 async function getAuthUser() {
@@ -18,7 +19,7 @@ export async function GET() {
 
   const supabase = createServiceClient();
   const { data, error } = await supabase
-    .from('usuarios')
+    .from(T.usuarios)
     .select('id, nome, email, role, ativo, created_at')
     .order('created_at');
 
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
   const senhaHash = await hashPassword(password);
 
   const { data, error } = await supabase
-    .from('usuarios')
+    .from(T.usuarios)
     .insert({
       nome,
       email: email.toLowerCase().trim(),
@@ -115,7 +116,7 @@ export async function PUT(request: NextRequest) {
 
   const supabase = createServiceClient();
   const { data, error } = await supabase
-    .from('usuarios')
+    .from(T.usuarios)
     .update(updates)
     .eq('id', id)
     .select('id, nome, email, role, ativo, created_at')
@@ -151,7 +152,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   const supabase = createServiceClient();
-  const { error } = await supabase.from('usuarios').delete().eq('id', id);
+  const { error } = await supabase.from(T.usuarios).delete().eq('id', id);
 
   if (error) {
     return NextResponse.json({ error: 'Erro ao excluir usuário' }, { status: 500 });

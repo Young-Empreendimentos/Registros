@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Controle de Registros — Young Empreendimentos
 
-## Getting Started
+Sistema web para acompanhar o fluxo pós-venda de registro de imóveis (ITBI, cartório, matrícula) por lote e empreendimento.
 
-First, run the development server:
+**Repositório:** [github.com/YoungEmpreendimentos/Registros](https://github.com/YoungEmpreendimentos/Registros)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+**Documentação no app:** menu lateral → **Ajuda** (`/ajuda`). Atualize `src/content/ajuda-content.ts` quando mudar sync, schema ou campos.
+
+## Arquitetura de dados
+
+Um único banco Supabase (espelho Sienge, `vvtympzatclvjaqucebr`):
+
+```
+API Sienge  →  ingestão diária  →  sienge_*
+sienge_*  →  sync  →  registros_*  (empreendimentos, lotes, contratos, registros, …)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+O sistema **não consulta a API Sienge em tempo real** no uso diário; apenas o job de ingestão chama a API.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+O projeto legado `atfsixsamqwndwnfvpdy` foi descontinuado — dados migrados para `registros_*` no espelho.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Desenvolvimento
 
-## Learn More
+```bash
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Abra [http://localhost:3000](http://localhost:3000). Login em `/login`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Sincronização
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Comando | Descrição |
+|---------|-----------|
+| `npm run ingest-sienge` | API Sienge → `sienge_*` |
+| `npm run sync` | `sienge_*` → `registros_*` |
+| `npm run pipeline-diario` | Ingestão + sync |
 
-## Deploy on Vercel
+Cron automático: **02:00** (America/Sao_Paulo) via `server.js` → `POST /api/pipeline-diario`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Migração do banco antigo
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Executar `supabase-ti/migrations/002_registros_schema.sql` no SQL Editor do espelho.
+2. Configurar `.env.local` (ver `.env.example`).
+3. `npm run migrar-dados-para-espelho` — copia do projeto `atfsixsamqwndwnfvpdy` (requer `SUPABASE_LEGACY_*`).
+
+## Variáveis de ambiente
+
+Copie `.env.example` para `.env.local`:
+
+- `SUPABASE_TI_URL` / `SUPABASE_TI_SERVICE_KEY` / `SUPABASE_TI_ANON_KEY` — banco único
+- `SIENGE_*` — credenciais API (apenas ingestão)
+- `SYNC_API_SECRET` — protege endpoints de sync
+- `SUPABASE_LEGACY_*` — opcional, só para migração de dados
+
+## Migrations
+
+SQL em `supabase-ti/migrations/` — executar no banco do espelho (`vvtympzatclvjaqucebr`).
+
+Migrations em `supabase/migrations/` referem-se ao projeto legado (histórico).

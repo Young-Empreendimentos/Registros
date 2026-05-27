@@ -42,3 +42,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# dados locais / temporários
+/logs/
+/scripts/tmp-planilha.csv
+/analise.csv
+/concluidos_planilha.txt
+/lista_concluidos.txt
+/planilha_base.csv
+/planilha_base_full.csv

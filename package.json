@@ -8,7 +8,11 @@
     "start": "node server.js",
     "start:next": "next start",
     "lint": "eslint",
-    "sync": "npx tsx src/lib/sienge/sync-cli.ts"
+    "ingest-sienge": "npx tsx scripts/executar-ingest-sienge.ts",
+    "sync": "npx tsx scripts/executar-sync.ts",
+    "pipeline-diario": "npx tsx scripts/executar-pipeline-diario.ts",
+    "marcar-concluidos-planilha": "npx tsx scripts/marcar-concluidos-planilha.ts",
+    "migrar-dados-para-espelho": "npx tsx scripts/migrar-dados-para-espelho.ts"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",

@@ -1,4 +1,4 @@
-# Script de sincronização automática SIENGE
+# Pipeline diário: API Sienge -> Supabase TI -> Sistema de Registros
 # Executar diariamente às 02:00
 
 $logFile = "C:\Users\Rafael\Desktop\Projeto registros\logs\sync-$(Get-Date -Format 'yyyy-MM-dd').log"
@@ -17,7 +17,7 @@ function Write-Log {
     Write-Host $logMessage
 }
 
-Write-Log "=== INICIANDO SINCRONIZACAO SIENGE ==="
+Write-Log "=== INICIANDO PIPELINE DIARIO SIENGE ==="
 
 try {
     # Verificar se o servidor está rodando
@@ -46,8 +46,8 @@ try {
         Start-Sleep -Seconds 30
     }
 
-    # Disparar sincronização (fire and forget - não espera resposta completa)
-    Write-Log "Disparando sincronizacao..."
+    # Disparar pipeline (ingest + sync)
+    Write-Log "Disparando pipeline diario..."
     
     $body = '{"secret":"young-sync-secret-2026"}'
     
@@ -55,7 +55,7 @@ try {
     $job = Start-Job -ScriptBlock {
         param($body)
         try {
-            Invoke-WebRequest -Uri "http://localhost:3000/api/sync" `
+            Invoke-WebRequest -Uri "http://localhost:3000/api/pipeline-diario" `
                 -Method POST `
                 -Body $body `
                 -ContentType "application/json" `
@@ -66,7 +66,7 @@ try {
         }
     } -ArgumentList $body
 
-    Write-Log "Sincronizacao disparada. Aguardando conclusao (max 35 min)..."
+    Write-Log "Pipeline disparado. Aguardando conclusao (max 35 min)..."
     
     # Aguarda até 25 minutos, verificando status a cada 30 segundos
     $maxWait = 35 * 60  # 25 minutos em segundos
@@ -115,5 +115,5 @@ try {
     Write-Log "ERRO CRITICO: $($_.Exception.Message)"
 }
 
-Write-Log "=== SINCRONIZACAO FINALIZADA ==="
+Write-Log "=== PIPELINE FINALIZADO ==="
 

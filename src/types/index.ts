@@ -60,6 +60,10 @@ export interface Registro {
   responsabilidade_cliente: boolean;
   financiamento_caixa: boolean;
   observacoes: string | null;
+  /** Etapa manual só na aba Análise; não altera a etapa calculada nas demais abas */
+  etapa_analise?: Etapa | null;
+  /** Descrição de andamento (aba Análise); independente de observacoes */
+  andamento?: string | null;
   data_gatilho: string | null;
   created_at: string;
   updated_at: string;
