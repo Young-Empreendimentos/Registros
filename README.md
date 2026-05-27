@@ -58,3 +58,21 @@ Copie `.env.example` para `.env.local`:
 SQL em `supabase-ti/migrations/` — executar no banco do espelho (`vvtympzatclvjaqucebr`).
 
 Migrations em `supabase/migrations/` referem-se ao projeto legado (histórico).
+
+## Deploy no Hetzner (Docker)
+
+Guia completo: [deploy/DEPLOY-HETZNER.md](deploy/DEPLOY-HETZNER.md)
+
+Resumo no servidor:
+
+```bash
+cd /opt/registros && git pull
+docker compose build && docker compose up -d
+```
+
+Da sua máquina (após configurar SSH):
+
+```powershell
+$env:DEPLOY_HOST = "IP_DO_SERVIDOR"
+.\deploy\deploy-remoto.ps1
+```

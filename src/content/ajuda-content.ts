@@ -350,6 +350,13 @@ export const BANCOS_INFO = {
   },
 };
 
+export const DEPLOY_HETZNER_RESUMO = {
+  guia: 'deploy/DEPLOY-HETZNER.md',
+  pastaServidor: '/opt/registros',
+  comandoAtualizar: 'git pull && docker compose build && docker compose up -d',
+  requisitos: ['Docker', 'Nginx + HTTPS (recomendado)', '.env.local no servidor'],
+};
+
 export const MANUTENCAO_ITENS = [
   'Rodar npm run pipeline-diario após mudanças na API Sienge ou em sienge_parcelas_receber.',
   `Novas colunas do app: SQL em supabase-ti/migrations/ no projeto ${SUPABASE_PROJETO_ID}.`,
