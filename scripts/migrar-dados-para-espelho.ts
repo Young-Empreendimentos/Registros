@@ -9,6 +9,17 @@
  *
  * Uso: npm run migrar-dados-para-espelho
  */
+import * as fs from 'fs';
+
+// Carregar .env.local antes dos imports que leem process.env
+const envPath = `${process.cwd()}/.env.local`;
+if (fs.existsSync(envPath)) {
+  for (const line of fs.readFileSync(envPath, 'utf-8').split('\n')) {
+    const m = line.match(/^([^#=]+)=(.*)$/);
+    if (m) process.env[m[1].trim()] = m[2].trim();
+  }
+}
+
 import { createLegacyClient, createRegistrosClient, T } from './lib/supabase-registros';
 
 const TABLES = [

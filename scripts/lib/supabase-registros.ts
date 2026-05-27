@@ -1,10 +1,19 @@
-import { config } from 'dotenv';
-import { resolve } from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseServiceKey, getSupabaseUrl } from '../../src/lib/supabase/config';
 import { R, RPC, T } from '../../src/lib/supabase/tables';
 
-config({ path: resolve(process.cwd(), '.env.local') });
+function loadEnvLocal() {
+  const envPath = path.resolve(process.cwd(), '.env.local');
+  if (!fs.existsSync(envPath)) return;
+  for (const line of fs.readFileSync(envPath, 'utf-8').split('\n')) {
+    const m = line.match(/^([^#=]+)=(.*)$/);
+    if (m) process.env[m[1].trim()] = m[2].trim();
+  }
+}
+
+loadEnvLocal();
 
 export { T, R, RPC };
 

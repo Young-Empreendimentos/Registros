@@ -6,24 +6,31 @@ import {
   EMPREENDIMENTOS_PERMITIDOS,
   PAPEIS_USUARIO,
   ETAPAS_REGISTRO,
+  ETAPAS_ANALISE_AJUDA,
+  ABAS_SISTEMA,
   GLOSSARIO_CAMPOS,
   SYNC_INFO,
   BANCOS_INFO,
   BANCO_SUPABASE_ESPELHO,
-  BANCO_SUPABASE_REGISTROS,
+  SUPABASE_PROJETO_URL,
   ORIGEM_DADOS,
+  MAPA_TABELAS_LEGADO,
+  MIGRACAO_INFO,
   MANUTENCAO_ITENS,
 } from '@/content/ajuda-content';
 
 const TOC = [
   { id: 'visao-geral', label: 'Visão geral' },
+  { id: 'abas', label: 'Abas do sistema' },
   { id: 'origem-dados', label: 'O que vem de cada fonte' },
+  { id: 'migracao', label: 'Migração de banco' },
   { id: 'github', label: 'Repositório GitHub' },
   { id: 'sincronizacao', label: 'Sincronização' },
-  { id: 'bancos', label: 'Bancos de dados' },
+  { id: 'bancos', label: 'Banco de dados' },
   { id: 'papeis', label: 'Papéis de usuário' },
   { id: 'campos', label: 'Glossário de campos' },
   { id: 'etapas', label: 'Etapas' },
+  { id: 'analise', label: 'Aba Análise' },
   { id: 'manutencao', label: 'Manutenção' },
   { id: 'empreendimentos', label: 'Empreendimentos' },
 ];
@@ -59,13 +66,38 @@ export default function AjudaPage() {
         <h2>Visão geral</h2>
         <p>
           O sistema controla o fluxo pós-venda de registro de imóveis (ITBI, cartório,
-          matrícula) por lote/empreendimento. Os dados cadastrais e financeiros vêm do
-          Sienge, mas o aplicativo <strong>não chama a API Sienge em tempo real</strong>:
-          usa um espelho no <strong>{BANCO_SUPABASE_ESPELHO}</strong>, atualizado
-          diariamente (tabelas <code>sienge_*</code>).
+          matrícula) por lote/empreendimento. Tudo fica em um único Supabase (
+          <strong>{BANCO_SUPABASE_ESPELHO}</strong>): espelho Sienge (<code>sienge_*</code>)
+          e dados do app (<code>registros_*</code>). O aplicativo{' '}
+          <strong>não chama a API Sienge em tempo real</strong> nas telas.
         </p>
         <pre className="help-code">{`API Sienge  →  (ingestão 1x/dia)  →  sienge_*
 sienge_*  →  (sync)  →  registros_*`}</pre>
+        <p className="text-sm text-orange-800 mt-3">
+          URL do banco: <code>{SUPABASE_PROJETO_URL}</code>
+        </p>
+      </section>
+
+      <section id="abas" className="help-section">
+        <h2>Abas do sistema</h2>
+        <table className="help-table">
+          <thead>
+            <tr>
+              <th>Aba</th>
+              <th>Descrição</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ABAS_SISTEMA.map((a) => (
+              <tr key={a.aba}>
+                <td>
+                  <strong>{a.aba}</strong>
+                </td>
+                <td>{a.descricao}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </section>
 
       <section id="origem-dados" className="help-section">
@@ -152,6 +184,58 @@ sienge_*  →  (sync)  →  registros_*`}</pre>
         </ul>
       </section>
 
+      <section id="migracao" className="help-section">
+        <h2>Migração de banco</h2>
+        <p>{MIGRACAO_INFO.resumo}</p>
+        <h3 className="text-sm font-semibold mt-4">Pré-requisitos</h3>
+        <ul>
+          {MIGRACAO_INFO.preRequisitos.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+        <h3 className="text-sm font-semibold mt-4">Schema</h3>
+        <p>
+          Arquivo: <code>{MIGRACAO_INFO.schemaSql}</code>
+        </p>
+        <h3 className="text-sm font-semibold mt-4">Copiar dados do projeto antigo</h3>
+        <p>
+          Comando: <code>{MIGRACAO_INFO.comandoMigracao}</code> (já executado após criar as
+          tabelas <code>registros_*</code>).
+        </p>
+        <h3 className="text-sm font-semibold mt-4">Mapa de tabelas (legado → atual)</h3>
+        <table className="help-table">
+          <thead>
+            <tr>
+              <th>Antes</th>
+              <th>Agora</th>
+            </tr>
+          </thead>
+          <tbody>
+            {MAPA_TABELAS_LEGADO.map((m) => (
+              <tr key={m.antiga}>
+                <td>
+                  <code>{m.antiga}</code>
+                </td>
+                <td>
+                  <code>{m.nova}</code>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <h3 className="text-sm font-semibold mt-4">Variáveis (.env.local)</h3>
+        <ul>
+          {MIGRACAO_INFO.envProducao.map((item) => (
+            <li key={item}>
+              <code>{item}</code>
+            </li>
+          ))}
+        </ul>
+        <p className="help-alert mt-4">
+          Projeto legado <code>{BANCOS_INFO.legado.id}</code>: {BANCOS_INFO.legado.status}
+        </p>
+      </section>
+
       <section id="github" className="help-section">
         <h2>Repositório GitHub</h2>
         <p>
@@ -183,10 +267,7 @@ sienge_*  →  (sync)  →  registros_*`}</pre>
             </tr>
             <tr>
               <th>O que roda</th>
-              <td>
-                Pipeline completo: ingestão Sienge → {BANCO_SUPABASE_ESPELHO}, depois sync →{' '}
-                {BANCO_SUPABASE_REGISTROS}
-              </td>
+              <td>Pipeline completo: ingestão → sienge_* → sync → registros_* (mesmo banco)</td>
             </tr>
             <tr>
               <th>Requisito</th>
@@ -299,6 +380,8 @@ sienge_*  →  (sync)  →  registros_*`}</pre>
         <h2>Banco de dados</h2>
         <h3>{BANCOS_INFO.unico.nome}</h3>
         <p>
+          URL: <code>{BANCOS_INFO.unico.url}</code>
+          <br />
           Variáveis: <code>{BANCOS_INFO.unico.env}</code>
         </p>
         <h4 className="text-sm font-semibold mt-3">Tabelas Sienge (ingestão)</h4>
@@ -368,12 +451,36 @@ sienge_*  →  (sync)  →  registros_*`}</pre>
 
       <section id="etapas" className="help-section">
         <h2>Etapas do registro</h2>
-        <p>Calculadas automaticamente conforme preenchimento e regras de negócio:</p>
+        <p>Etapa automática (demais abas) — calculada conforme preenchimento e regras:</p>
         <ul>
           {ETAPAS_REGISTRO.map((e) => (
             <li key={e}>{e}</li>
           ))}
         </ul>
+      </section>
+
+      <section id="analise" className="help-section">
+        <h2>Aba Análise</h2>
+        <p>
+          Mostra lotes <strong>em andamento</strong> segundo as etapas abaixo (ou{' '}
+          <code>etapa_analise</code> quando definida manualmente). O contador “em andamento” nas
+          outras abas usa o mesmo critério.
+        </p>
+        <h3 className="text-sm font-semibold mt-4">Etapas consideradas “em andamento”</h3>
+        <ul>
+          {ETAPAS_ANALISE_AJUDA.map((e) => (
+            <li key={e}>{e}</li>
+          ))}
+        </ul>
+        <h3 className="text-sm font-semibold mt-4">Excluídos do filtro</h3>
+        <ul>
+          <li>Empreendimento Morada da Coxilha</li>
+          <li>Flag financiamento Caixa</li>
+          <li>Flag segurar registro</li>
+        </ul>
+        <p className="text-sm text-orange-800 mt-3">
+          <strong>Andamento</strong> é campo separado de observações, editável na própria aba.
+        </p>
       </section>
 
       <section id="manutencao" className="help-section">
