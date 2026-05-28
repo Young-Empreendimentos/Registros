@@ -645,7 +645,6 @@ export function RegistrosTable({
               </tbody>
             </table>
           </div>
-          </div>
         </div>
 
         {/* Pagination */}

@@ -211,27 +211,48 @@ export default function AnalisePage() {
       </div>
 
       <div className="rounded-xl border border-orange-200 bg-white overflow-hidden shadow-sm">
-        <ScrollArea className="w-full">
+        <div className="w-full overflow-auto max-h-[calc(100vh-14rem)]">
           <div className="min-w-[900px]">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm border-separate border-spacing-0">
               <thead>
                 <tr className="border-b border-orange-200 bg-orange-50">
-                  <th className="px-4 py-3 text-left w-[100px]">
-                    <SortHeader field="lote">Lote</SortHeader>
+                  <th
+                    className={`sticky left-0 top-0 z-30 px-4 py-3 text-left ${STICKY_SHADOW}`}
+                    style={{
+                      background: '#fff7ed',
+                      width: STICKY_REGISTROS.col1Width,
+                      minWidth: STICKY_REGISTROS.col1Width,
+                    }}
+                  >
+                    <SortHeader field="empreendimento">Emp. / Lote</SortHeader>
                   </th>
-                  <th className="px-4 py-3 text-left w-[180px]">
-                    <SortHeader field="empreendimento">Empreendimento</SortHeader>
+                  <th
+                    className={`sticky top-0 z-30 px-4 py-3 text-left ${STICKY_SHADOW}`}
+                    style={{
+                      background: '#fff7ed',
+                      left: STICKY_REGISTROS.col2Left,
+                      width: STICKY_REGISTROS.col2Width,
+                      minWidth: STICKY_REGISTROS.col2Width,
+                    }}
+                  >
+                    <SortHeader field="cliente">Cliente</SortHeader>
                   </th>
-                  <th className="px-4 py-3 text-left w-[250px]">
-                    <SortHeader field="cliente">Nome Cliente</SortHeader>
-                  </th>
-                  <th className="px-4 py-3 text-center w-[120px]">
+                  <th
+                    className="sticky top-0 z-20 px-4 py-3 text-center w-[120px]"
+                    style={{ background: '#fff7ed' }}
+                  >
                     <SortHeader field="dias">Dias em Atraso</SortHeader>
                   </th>
-                  <th className="px-4 py-3 text-left w-[280px]">
+                  <th
+                    className="sticky top-0 z-20 px-4 py-3 text-left w-[280px]"
+                    style={{ background: '#fff7ed' }}
+                  >
                     <SortHeader field="etapa">Etapa (análise)</SortHeader>
                   </th>
-                  <th className="px-4 py-3 text-left min-w-[300px]">
+                  <th
+                    className="sticky top-0 z-20 px-4 py-3 text-left min-w-[300px]"
+                    style={{ background: '#fff7ed' }}
+                  >
                     <span className="text-xs font-semibold text-orange-800 uppercase tracking-wider">
                       Andamento
                     </span>
@@ -242,22 +263,37 @@ export default function AnalisePage() {
                 {filtered.map((item) => {
                   const etapaExibida = getEtapaAnalise(item);
                   const andamento = getAndamento(item.registro);
+                  const hoverCell = 'group-hover:bg-gray-50';
 
                   return (
                     <tr
                       key={item.registro.id}
-                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                      className={`group border-b border-gray-100 transition-colors border-l-4 ${getEmpBorder(item.empreendimento.nome)}`}
                     >
-                      <td className="px-4 py-3 text-gray-900 font-medium">
-                        {item.lote.numero}
+                      <td
+                        className={`sticky left-0 z-20 px-4 py-3 bg-white border-l-4 ${getEmpBorder(item.empreendimento.nome)} ${STICKY_SHADOW} ${hoverCell}`}
+                        style={{ width: STICKY_REGISTROS.col1Width, minWidth: STICKY_REGISTROS.col1Width }}
+                      >
+                        <EmpLoteCell
+                          empreendimentoNome={item.empreendimento.nome}
+                          loteNumero={item.lote.numero}
+                        />
                       </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {item.empreendimento.nome}
+                      <td
+                        className={`sticky z-20 px-4 py-3 bg-white ${STICKY_SHADOW} ${hoverCell}`}
+                        style={{
+                          left: STICKY_REGISTROS.col2Left,
+                          width: STICKY_REGISTROS.col2Width,
+                          minWidth: STICKY_REGISTROS.col2Width,
+                        }}
+                      >
+                        <ClienteCell
+                          nome={item.contrato?.cliente_nome}
+                          email={item.contrato?.cliente_email}
+                          compact
+                        />
                       </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {item.contrato?.cliente_nome || '-'}
-                      </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3 text-center group-hover:bg-gray-50">
                         {item.dias !== null ? (
                           <span
                             className={
@@ -274,7 +310,7 @@ export default function AnalisePage() {
                           <span className="text-gray-400">-</span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 group-hover:bg-gray-50">
                         <InlineEtapaSelect
                           value={etapaExibida}
                           manual={item.registro.etapa_analise ?? null}
@@ -285,7 +321,7 @@ export default function AnalisePage() {
                           }
                         />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 group-hover:bg-gray-50">
                         <InlineTextEdit
                           value={andamento}
                           onSave={async (v) =>
