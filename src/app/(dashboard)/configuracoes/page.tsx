@@ -38,6 +38,7 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
+  Mail,
 } from 'lucide-react';
 import type { UserRole } from '@/types';
 
@@ -130,6 +131,13 @@ export default function ConfiguracoesPage() {
   const [deleteUser, setDeleteUser] = useState<UsuarioRow | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const [credenciaisUser, setCredenciaisUser] = useState<UsuarioRow | null>(null);
+  const [credenciaisPassword, setCredenciaisPassword] = useState('');
+  const [credenciaisError, setCredenciaisError] = useState('');
+  const [credenciaisLoading, setCredenciaisLoading] = useState(false);
+  const [credenciaisSendingId, setCredenciaisSendingId] = useState<string | null>(null);
+  const [addEmailFeedback, setAddEmailFeedback] = useState<string | null>(null);
+
   const [syncLogs, setSyncLogs] = useState<SyncLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
@@ -194,6 +202,11 @@ export default function ConfiguracoesPage() {
         setAddError(data.error || 'Erro ao criar usuário');
         return;
       }
+      if (data.emailEnviado) {
+        setAddEmailFeedback(`E-mail de acesso enviado para ${addEmail}.`);
+      } else if (data.emailErro) {
+        setAddEmailFeedback(data.emailErro);
+      }
       setAddOpen(false);
       resetAddForm();
       fetchUsers();
@@ -246,12 +259,70 @@ export default function ConfiguracoesPage() {
         setEditError(data.error || 'Erro ao atualizar');
         return;
       }
+      if (editPassword) {
+        try {
+          const mailRes = await fetch('/api/usuarios/enviar-credenciais', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              usuarioId: editUser.id,
+              password: editPassword,
+              tipo: 'lembrete',
+            }),
+          });
+          const mailData = await mailRes.json();
+          if (mailRes.ok) {
+            setAddEmailFeedback(mailData.message || 'Nova senha enviada por e-mail.');
+          }
+        } catch {
+          // usuário já foi salvo; lembrete pode ser reenviado manualmente
+        }
+      }
       setEditUser(null);
       fetchUsers();
     } catch {
       setEditError('Erro de conexão');
     } finally {
       setEditLoading(false);
+    }
+  };
+
+  const openCredenciais = (user: UsuarioRow) => {
+    setCredenciaisUser(user);
+    setCredenciaisPassword('');
+    setCredenciaisError('');
+  };
+
+  const handleSendCredenciais = async () => {
+    if (!credenciaisUser) return;
+    setCredenciaisError('');
+    setCredenciaisLoading(true);
+    setCredenciaisSendingId(credenciaisUser.id);
+    try {
+      const body: Record<string, string> = {
+        usuarioId: credenciaisUser.id,
+        tipo: 'lembrete',
+      };
+      if (credenciaisPassword.trim()) {
+        body.password = credenciaisPassword;
+      }
+      const res = await fetch('/api/usuarios/enviar-credenciais', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCredenciaisError(data.error || 'Erro ao enviar e-mail');
+        return;
+      }
+      setCredenciaisUser(null);
+      setAddEmailFeedback(data.message || 'E-mail enviado.');
+    } catch {
+      setCredenciaisError('Erro de conexão');
+    } finally {
+      setCredenciaisLoading(false);
+      setCredenciaisSendingId(null);
     }
   };
 
@@ -570,11 +641,25 @@ export default function ConfiguracoesPage() {
             <Users className="w-5 h-5 text-orange-500" />
             Usuários ({users.length})
           </h2>
-          <Button onClick={() => { resetAddForm(); setAddOpen(true); }}>
+          <Button onClick={() => { resetAddForm(); setAddEmailFeedback(null); setAddOpen(true); }}>
             <UserPlus className="w-4 h-4" />
             Novo Usuário
           </Button>
         </div>
+
+        {addEmailFeedback && (
+          <div className="mb-4 flex items-start justify-between gap-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-orange-900">
+            <span>{addEmailFeedback}</span>
+            <button
+              type="button"
+              className="text-orange-600 hover:text-orange-900 shrink-0"
+              onClick={() => setAddEmailFeedback(null)}
+              aria-label="Fechar"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         <div className="space-y-2">
           <div className="grid grid-cols-5 gap-4 px-4 py-2 text-xs font-semibold text-orange-700 uppercase tracking-wider">
@@ -618,6 +703,20 @@ export default function ConfiguracoesPage() {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8"
+                    onClick={() => openCredenciais(user)}
+                    title="Enviar lembrete de acesso por e-mail"
+                    disabled={credenciaisSendingId === user.id}
+                  >
+                    {credenciaisSendingId === user.id ? (
+                      <div className="w-3.5 h-3.5 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Mail className="w-3.5 h-3.5" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
                     onClick={() => openEdit(user)}
                     title="Editar"
                   >
@@ -653,7 +752,7 @@ export default function ConfiguracoesPage() {
           <DialogHeader>
             <DialogTitle>Novo Usuário</DialogTitle>
             <DialogDescription>
-              Crie uma conta para um novo membro da equipe.
+              Crie uma conta para um novo membro da equipe. Os dados de acesso serão enviados automaticamente por e-mail.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -796,6 +895,52 @@ export default function ConfiguracoesPage() {
             </Button>
             <Button onClick={handleEdit} disabled={editLoading}>
               {editLoading ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Enviar lembrete de credenciais */}
+      <Dialog open={!!credenciaisUser} onOpenChange={(open) => !open && setCredenciaisUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enviar lembrete de acesso</DialogTitle>
+            <DialogDescription>
+              Envia por e-mail o link da plataforma, login e perfil de{' '}
+              <strong>{credenciaisUser?.nome}</strong> ({credenciaisUser?.email}).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {credenciaisError && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                <p className="text-red-400 text-sm">{credenciaisError}</p>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>Nova senha (opcional)</Label>
+              <Input
+                type="password"
+                value={credenciaisPassword}
+                onChange={(e) => setCredenciaisPassword(e.target.value)}
+                placeholder="Deixe em branco para não alterar nem incluir senha"
+                autoComplete="new-password"
+              />
+              <p className="text-xs text-orange-600">
+                Se preencher, a senha será atualizada no sistema e enviada no e-mail.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCredenciaisUser(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSendCredenciais} disabled={credenciaisLoading}>
+              {credenciaisLoading ? 'Enviando...' : (
+                <>
+                  <Mail className="w-4 h-4" />
+                  Enviar lembrete
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

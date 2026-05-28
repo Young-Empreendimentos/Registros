@@ -1,7 +1,15 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseServiceKey, getSupabaseUrl } from '@/lib/supabase/config';
 
-export const supabaseTI = createClient(getSupabaseUrl(), getSupabaseServiceKey());
+let _supabaseTI: SupabaseClient | null = null;
+
+/** Cliente lazy — evita erro "supabaseUrl is required" no `next build` sem env. */
+export function getSupabaseTI(): SupabaseClient {
+  if (!_supabaseTI) {
+    _supabaseTI = createClient(getSupabaseUrl(), getSupabaseServiceKey());
+  }
+  return _supabaseTI;
+}
 
 export interface TIReceipt {
   type: string;
@@ -57,7 +65,7 @@ export async function fetchValoresPagosFromTI(): Promise<ValorPagoContrato[]> {
   let hasMore = true;
 
   while (hasMore) {
-    const { data, error } = await supabaseTI
+    const { data, error } = await getSupabaseTI()
       .from('sienge_parcelas_receber')
       .select('document_number, client_name, cost_center_name, units, receipts')
       .range(offset, offset + pageSize - 1);
@@ -109,7 +117,7 @@ export async function fetchValorPagoByUnit(
   costCenterName: string,
   unitName: string
 ): Promise<number> {
-  const { data, error } = await supabaseTI
+  const { data, error } = await getSupabaseTI()
     .from('sienge_parcelas_receber')
     .select('receipts')
     .eq('cost_center_name', costCenterName)
@@ -166,7 +174,7 @@ export function isContratoAtivo(contrato: TIContratoVenda): boolean {
   return contrato.situation !== 'Cancelado' && !contrato.cancellation_date;
 }
 
-type TISelectQuery = ReturnType<ReturnType<typeof supabaseTI.from>['select']>;
+type TISelectQuery = ReturnType<ReturnType<SupabaseClient['from']>['select']>;
 
 async function fetchAllPaginatedTI<T>(
   table: string,
@@ -179,7 +187,7 @@ async function fetchAllPaginatedTI<T>(
   let hasMore = true;
 
   while (hasMore) {
-    let query = supabaseTI
+    let query = getSupabaseTI()
       .from(table)
       .select(select)
       .range(offset, offset + pageSize - 1) as TISelectQuery;

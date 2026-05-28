@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
 import { T } from '@/lib/supabase/tables';
 import { verifyToken, hashPassword, COOKIE_NAME } from '@/lib/auth';
+import { sendUsuarioCredenciaisEmail } from '@/lib/email/credenciais-usuario';
+import type { UserRole } from '@/types';
 
 async function getAuthUser() {
   const cookieStore = await cookies();
@@ -78,7 +80,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Erro ao criar usuário' }, { status: 500 });
   }
 
-  return NextResponse.json({ usuario: data }, { status: 201 });
+  let emailEnviado = false;
+  let emailErro: string | undefined;
+  try {
+    await sendUsuarioCredenciaisEmail({
+      nome: data.nome,
+      email: data.email,
+      role: data.role as UserRole,
+      password,
+      tipo: 'novo',
+    });
+    emailEnviado = true;
+  } catch (err) {
+    console.error('Erro ao enviar e-mail de credenciais:', err);
+    emailErro = 'Usuário criado, mas o e-mail de acesso não foi enviado. Use "Enviar lembrete" na lista.';
+  }
+
+  return NextResponse.json(
+    { usuario: data, emailEnviado, emailErro },
+    { status: 201 }
+  );
 }
 
 export async function PUT(request: NextRequest) {

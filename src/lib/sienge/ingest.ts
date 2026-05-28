@@ -5,7 +5,7 @@ import {
   type SiengeContract,
   type SiengeUnit,
 } from './client';
-import { supabaseTI } from './ti-client';
+import { getSupabaseTI } from './ti-client';
 import { ALLOWED_ENTERPRISE_IDS, ALLOWED_ENTERPRISE_IDS_ARRAY } from './constants';
 
 const BATCH_SIZE = 200;
@@ -31,7 +31,7 @@ async function upsertBatches<T extends Record<string, unknown>>(
 ): Promise<number> {
   let total = 0;
   for (const batch of chunk(rows, BATCH_SIZE)) {
-    const { error } = await supabaseTI.from(table).upsert(batch, { onConflict });
+    const { error } = await getSupabaseTI().from(table).upsert(batch, { onConflict });
     if (error) throw new Error(`${table}: ${error.message}`);
     total += batch.length;
   }

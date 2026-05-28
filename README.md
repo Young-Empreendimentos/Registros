@@ -61,7 +61,8 @@ Migrations em `supabase/migrations/` referem-se ao projeto legado (histórico).
 
 ## Deploy no Hetzner (Docker)
 
-Guia completo: [deploy/DEPLOY-HETZNER.md](deploy/DEPLOY-HETZNER.md)
+- **Criar servidor novo:** [deploy/CRIAR-SERVIDOR-HETZNER.md](deploy/CRIAR-SERVIDOR-HETZNER.md)
+- **Deploy / atualizar:** [deploy/DEPLOY-HETZNER.md](deploy/DEPLOY-HETZNER.md)
 
 Resumo no servidor:
 

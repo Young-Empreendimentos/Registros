@@ -26,7 +26,6 @@ export function RegistrosProvider({ children }: { children: ReactNode }) {
   const [registros, setRegistros] = useState<RegistroCompleto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
 
   const fetchRegistros = useCallback(async (silent = false) => {
     if (!silent) {
@@ -59,7 +58,7 @@ export function RegistrosProvider({ children }: { children: ReactNode }) {
       )
     );
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await createClient()
       .from(T.registros)
       .update(updates)
       .eq('id', registroId);

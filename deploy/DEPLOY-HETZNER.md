@@ -63,7 +63,8 @@ sudo cp deploy/nginx-registros.conf.example /etc/nginx/sites-available/registros
 sudo nano /etc/nginx/sites-available/registros   # trocar server_name
 sudo ln -sf /etc/nginx/sites-available/registros /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d registros.seudominio.com.br
+# DNS: A sistemaderegistros.youngempreendimentos.com.br → IP do Hetzner
+bash deploy/setup-ssl.sh sistemaderegistros.youngempreendimentos.com.br comercial@youngempreendimentos.com.br
 ```
 
 ## 6. Atualizar após `git push`
