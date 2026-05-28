@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { DocumentPreview } from '@/components/document-preview';
+import { STICKY_LOTE_EMP, STICKY_SHADOW } from '@/lib/sticky-table-columns';
 import { FileCheck, Plus, ExternalLink, Eye } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
@@ -151,27 +152,57 @@ export default function ComprovantesPage() {
         </div>
       ) : (
         <div className="rounded-xl border border-orange-200 bg-white overflow-hidden shadow-sm">
-          <table className="w-full text-sm">
+          <div className="w-full overflow-auto max-h-[calc(100vh-14rem)]">
+          <table className="w-full text-sm border-separate border-spacing-0 min-w-[700px]">
             <thead>
               <tr className="border-b border-orange-200 bg-orange-50">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-orange-800 uppercase tracking-wider">Lote</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-orange-800 uppercase tracking-wider">Empreendimento</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-orange-800 uppercase tracking-wider">Descrição</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-orange-800 uppercase tracking-wider">Data</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-orange-800 uppercase tracking-wider">Ações</th>
+                <th
+                  className={`sticky left-0 top-0 z-30 px-4 py-3 text-left text-xs font-semibold text-orange-800 uppercase tracking-wider ${STICKY_SHADOW}`}
+                  style={{ background: '#fff7ed', width: STICKY_LOTE_EMP.col1Width, minWidth: 120 }}
+                >
+                  Lote
+                </th>
+                <th
+                  className={`sticky top-0 z-30 px-4 py-3 text-left text-xs font-semibold text-orange-800 uppercase tracking-wider ${STICKY_SHADOW}`}
+                  style={{
+                    background: '#fff7ed',
+                    left: STICKY_LOTE_EMP.col2Left,
+                    width: STICKY_LOTE_EMP.col2Width,
+                    minWidth: STICKY_LOTE_EMP.col2Width,
+                  }}
+                >
+                  Empreendimento
+                </th>
+                <th className="sticky top-0 z-20 px-4 py-3 text-left text-xs font-semibold text-orange-800 uppercase tracking-wider" style={{ background: '#fff7ed' }}>Descrição</th>
+                <th className="sticky top-0 z-20 px-4 py-3 text-left text-xs font-semibold text-orange-800 uppercase tracking-wider" style={{ background: '#fff7ed' }}>Data</th>
+                <th className="sticky top-0 z-20 px-4 py-3 text-center text-xs font-semibold text-orange-800 uppercase tracking-wider" style={{ background: '#fff7ed' }}>Ações</th>
               </tr>
             </thead>
             <tbody>
               {comprovantes.map((c) => (
                 <tr
                   key={c.id}
-                  className="border-b border-orange-100 hover:bg-orange-50 transition-colors"
+                  className="group border-b border-orange-100 transition-colors"
                 >
-                  <td className="px-4 py-3 text-white font-medium">Lote {c.lote_numero}</td>
-                  <td className="px-4 py-3 text-gray-700">{c.empreendimento_nome}</td>
-                  <td className="px-4 py-3 text-gray-600">{c.descricao || '-'}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(c.created_at)}</td>
-                  <td className="px-4 py-3">
+                  <td
+                    className={`sticky left-0 z-20 px-4 py-3 text-gray-900 font-medium bg-white ${STICKY_SHADOW} group-hover:bg-orange-50`}
+                    style={{ width: STICKY_LOTE_EMP.col1Width, minWidth: 120 }}
+                  >
+                    Lote {c.lote_numero}
+                  </td>
+                  <td
+                    className={`sticky z-20 px-4 py-3 text-gray-700 bg-white ${STICKY_SHADOW} group-hover:bg-orange-50`}
+                    style={{
+                      left: STICKY_LOTE_EMP.col2Left,
+                      width: STICKY_LOTE_EMP.col2Width,
+                      minWidth: STICKY_LOTE_EMP.col2Width,
+                    }}
+                  >
+                    {c.empreendimento_nome}
+                  </td>
+                  <td className="px-4 py-3 text-gray-600 group-hover:bg-orange-50">{c.descricao || '-'}</td>
+                  <td className="px-4 py-3 text-gray-500 text-xs group-hover:bg-orange-50">{formatDate(c.created_at)}</td>
+                  <td className="px-4 py-3 group-hover:bg-orange-50">
                     <div className="flex items-center justify-center gap-2">
                       <Button
                         variant="ghost"
@@ -199,6 +230,7 @@ export default function ComprovantesPage() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

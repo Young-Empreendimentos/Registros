@@ -7,10 +7,12 @@ import { InlineTextEdit, InlineCheckbox, UrlField } from './inline-edit';
 import { DocumentPreview } from '@/components/document-preview';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { isRegistroEmAndamento } from '@/lib/analise';
+import { getEmpBorder } from '@/lib/emp-lote-display';
+import { STICKY_REGISTROS, STICKY_SHADOW } from '@/lib/sticky-table-columns';
+import { ClienteCell, EmpLoteCell } from './registro-identity-cells';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MultiSelect } from '@/components/ui/multi-select';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
   Mail,
   Search,
@@ -38,6 +40,10 @@ type SortDir = 'asc' | 'desc';
 
 const PAGE_SIZE = 50;
 
+const { col1Width: STICKY_COL1_WIDTH, col2Width: STICKY_COL2_WIDTH, col2Left: STICKY_COL2_LEFT } =
+  STICKY_REGISTROS;
+const headerBg = 'var(--primary-light)';
+
 const ALL_ETAPAS: Etapa[] = [
   'Com pendências',
   'Concluído',
@@ -51,51 +57,6 @@ const ALL_ETAPAS: Etapa[] = [
   'Vendido',
   'Propriedade Young',
 ];
-
-const EMP_COLORS: Record<string, string> = {};
-const COLOR_PALETTE = [
-  'bg-blue-50 text-blue-700 border-blue-200',
-  'bg-emerald-50 text-emerald-700 border-emerald-200',
-  'bg-amber-50 text-amber-700 border-amber-200',
-  'bg-purple-50 text-purple-700 border-purple-200',
-  'bg-rose-50 text-rose-700 border-rose-200',
-  'bg-cyan-50 text-cyan-700 border-cyan-200',
-  'bg-orange-50 text-orange-700 border-orange-200',
-  'bg-indigo-50 text-indigo-700 border-indigo-200',
-  'bg-teal-50 text-teal-700 border-teal-200',
-  'bg-pink-50 text-pink-700 border-pink-200',
-  'bg-lime-50 text-lime-700 border-lime-200',
-  'bg-violet-50 text-violet-700 border-violet-200',
-];
-
-const LEFT_BORDER_PALETTE = [
-  'border-l-blue-400',
-  'border-l-emerald-400',
-  'border-l-amber-400',
-  'border-l-purple-400',
-  'border-l-rose-400',
-  'border-l-cyan-400',
-  'border-l-orange-400',
-  'border-l-indigo-400',
-  'border-l-teal-400',
-  'border-l-pink-400',
-  'border-l-lime-400',
-  'border-l-violet-400',
-];
-
-function getEmpColor(name: string): string {
-  if (!EMP_COLORS[name]) {
-    const idx = Object.keys(EMP_COLORS).length % COLOR_PALETTE.length;
-    EMP_COLORS[name] = COLOR_PALETTE[idx];
-  }
-  return EMP_COLORS[name];
-}
-
-function getEmpBorder(name: string): string {
-  getEmpColor(name);
-  const idx = Object.keys(EMP_COLORS).indexOf(name) % LEFT_BORDER_PALETTE.length;
-  return LEFT_BORDER_PALETTE[idx];
-}
 
 export function RegistrosTable({
   registros,
@@ -298,87 +259,97 @@ export function RegistrosTable({
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table — scroll nativo para sticky nas colunas Emp/Lote e Cliente */}
       <div className="overflow-hidden">
-        <ScrollArea className="w-full">
+        <div className="w-full overflow-auto max-h-[calc(100vh-14rem)]">
           <div className="min-w-[2000px]">
-            <table className="w-full text-xs">
+            <table className="w-full text-xs border-separate border-spacing-0">
               <thead>
-                <tr className="border-b border-[var(--gray-lighter)]" style={{ background: 'var(--primary-light)' }}>
-                  <th className="sticky left-0 z-10 px-2 py-2 text-left min-w-[140px]" style={{ background: 'var(--primary-light)' }}>
+                <tr className="border-b border-[var(--gray-lighter)]" style={{ background: headerBg }}>
+                  <th
+                    className={`sticky left-0 top-0 z-30 px-2 py-2 text-left min-w-[140px] max-w-[140px] ${STICKY_SHADOW}`}
+                    style={{ background: headerBg, width: STICKY_COL1_WIDTH }}
+                  >
                     <SortHeader field="empreendimento">Emp. / Lote</SortHeader>
                   </th>
-                  <th className="px-2 py-2 text-left">
+                  <th
+                    className={`sticky top-0 z-30 px-2 py-2 text-left min-w-[150px] max-w-[150px] ${STICKY_SHADOW}`}
+                    style={{
+                      background: headerBg,
+                      left: STICKY_COL2_LEFT,
+                      width: STICKY_COL2_WIDTH,
+                    }}
+                  >
                     <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Cliente</span>
                   </th>
-                  <th className="px-2 py-2 text-left">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-left" style={{ background: headerBg }}>
                     <SortHeader field="etapa">Etapa</SortHeader>
                   </th>
-                  <th className="px-2 py-2 text-right">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-right" style={{ background: headerBg }}>
                     <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>A.V</span>
                   </th>
-                  <th className="px-2 py-2 text-right">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-right" style={{ background: headerBg }}>
                     <SortHeader field="valor_total">Total</SortHeader>
                   </th>
-                  <th className="px-2 py-2 text-right">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-right" style={{ background: headerBg }}>
                     <SortHeader field="valor_ja_pago">Pago</SortHeader>
                   </th>
-                  <th className="px-2 py-2 text-right">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-right" style={{ background: headerBg }}>
                     <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Gatilho</span>
                   </th>
-                  <th className="px-2 py-2 text-left">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-left" style={{ background: headerBg }}>
                     <SortHeader field="data_contrato">Contrato</SortHeader>
                   </th>
-                  <th className="px-2 py-2 text-left">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-left" style={{ background: headerBg }}>
                     <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Sol. ITBI</span>
                   </th>
-                  <th className="px-2 py-2 text-right">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-right" style={{ background: headerBg }}>
                     <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Esp. ITBI</span>
                   </th>
-                  <th className="px-2 py-2 text-right">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-right" style={{ background: headerBg }}>
                     <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Vl. ITBI</span>
                   </th>
-                  <th className="px-2 py-2 text-right">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-right" style={{ background: headerBg }}>
                     <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Div.</span>
                   </th>
-                  <th className="px-2 py-2 text-left">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-left" style={{ background: headerBg }}>
                     <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Boleto</span>
                   </th>
-                  <th className="px-2 py-2 text-left">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-left" style={{ background: headerBg }}>
                     <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Comprov.</span>
                   </th>
-                  <th className="px-2 py-2 text-left">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-left" style={{ background: headerBg }}>
                     <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>OP Reg.</span>
                   </th>
-                  <th className="px-2 py-2 text-left">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-left" style={{ background: headerBg }}>
                     <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>NF Reg.</span>
                   </th>
-                  <th className="px-2 py-2 text-left">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-left" style={{ background: headerBg }}>
                     <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Matríc.</span>
                   </th>
-                  <th className="px-2 py-2 text-left">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-left" style={{ background: headerBg }}>
                     <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Recol.</span>
                   </th>
-                  <th className="px-2 py-2 text-left">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-left" style={{ background: headerBg }}>
                     <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Entr. RI</span>
                   </th>
-                  <th className="px-2 py-2 text-left">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-left" style={{ background: headerBg }}>
                     <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Receb. RI</span>
                   </th>
-                  <th className="px-2 py-2 text-center">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-center" style={{ background: headerBg }}>
                     <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Flags</span>
                   </th>
-                  <th className="px-2 py-2 text-left">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-left" style={{ background: headerBg }}>
                     <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Gatilho</span>
                   </th>
-                  <th className="px-2 py-2 text-right">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-right" style={{ background: headerBg }}>
                     <SortHeader field="dias">Dias</SortHeader>
                   </th>
-                  <th className="px-2 py-2 text-center">
+                  <th className="sticky top-0 z-20 px-2 py-2 text-center" style={{ background: headerBg }}>
                     <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Ações</span>
                   </th>
                   {showObservacoes && (
-                    <th className="px-2 py-2 text-left">
+                    <th className="sticky top-0 z-20 px-2 py-2 text-left" style={{ background: headerBg }}>
                       <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--primary)' }}>Obs.</span>
                     </th>
                   )}
@@ -387,34 +358,35 @@ export function RegistrosTable({
               <tbody>
                 {paged.map((item) => {
                   const isConcluido = item.etapa === 'Concluído';
-                  const rowBg = isConcluido ? 'bg-emerald-50' : '';
                   const cellBg = isConcluido ? 'bg-emerald-50' : 'bg-[var(--bg-card)]';
-                  
+                  const hoverCell = isConcluido ? 'group-hover:bg-emerald-100/80' : 'group-hover:bg-gray-50';
+
                   return (
                   <tr
                     key={item.registro.id}
-                    className={`border-b border-gray-100 hover:bg-gray-50 transition-colors border-l-4 ${getEmpBorder(item.empreendimento.nome)} ${rowBg}`}
+                    className={`group border-b border-gray-100 transition-colors border-l-4 ${getEmpBorder(item.empreendimento.nome)} ${isConcluido ? 'bg-emerald-50' : ''}`}
                   >
-                    {/* Empreendimento + Lote (merged) */}
-                    <td className={`sticky left-0 z-10 px-2 py-1.5 border-l-4 ${getEmpBorder(item.empreendimento.nome)} ${cellBg}`}>
-                      <div className="flex flex-col">
-                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold border w-fit ${getEmpColor(item.empreendimento.nome)}`}>
-                          {item.empreendimento.nome}
-                        </span>
-                        <span className="text-gray-900 font-medium text-xs">{item.lote.numero}</span>
-                      </div>
+                    {/* Empreendimento + Lote (fixo à esquerda) */}
+                    <td
+                      className={`sticky left-0 z-20 px-2 py-1.5 border-l-4 min-w-[140px] max-w-[140px] ${STICKY_SHADOW} ${getEmpBorder(item.empreendimento.nome)} ${cellBg} ${hoverCell}`}
+                      style={{ width: STICKY_COL1_WIDTH }}
+                    >
+                      <EmpLoteCell
+                        empreendimentoNome={item.empreendimento.nome}
+                        loteNumero={item.lote.numero}
+                      />
                     </td>
 
-                    {/* Cliente */}
-                    <td className="px-2 py-1.5">
-                      <div>
-                        <p className="text-gray-800 text-xs truncate max-w-[120px]">
-                          {item.contrato?.cliente_nome || '-'}
-                        </p>
-                        <p className="text-gray-400 text-[10px] truncate max-w-[120px]">
-                          {item.contrato?.cliente_email || ''}
-                        </p>
-                      </div>
+                    {/* Cliente (fixo à esquerda) */}
+                    <td
+                      className={`sticky z-20 px-2 py-1.5 min-w-[150px] max-w-[150px] ${STICKY_SHADOW} ${cellBg} ${hoverCell}`}
+                      style={{ left: STICKY_COL2_LEFT, width: STICKY_COL2_WIDTH }}
+                    >
+                      <ClienteCell
+                        nome={item.contrato?.cliente_nome}
+                        email={item.contrato?.cliente_email}
+                        compact
+                      />
                     </td>
 
                     {/* Etapa */}
@@ -673,8 +645,8 @@ export function RegistrosTable({
               </tbody>
             </table>
           </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+          </div>
+        </div>
 
         {/* Pagination */}
         {totalPages > 1 && (

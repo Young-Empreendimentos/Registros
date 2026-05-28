@@ -7,7 +7,9 @@ import { Input } from '@/components/ui/input';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { InlineTextEdit } from '@/components/data-table/inline-edit';
 import { InlineEtapaSelect } from '@/components/data-table/inline-etapa-select';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { EmpLoteCell, ClienteCell } from '@/components/data-table/registro-identity-cells';
+import { getEmpBorder } from '@/lib/emp-lote-display';
+import { STICKY_REGISTROS, STICKY_SHADOW } from '@/lib/sticky-table-columns';
 import {
   Search,
   X,
@@ -299,7 +301,7 @@ export default function AnalisePage() {
 
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-orange-700">
+                    <td colSpan={5} className="px-4 py-12 text-center text-orange-700">
                       Nenhum registro em andamento encontrado
                     </td>
                   </tr>
@@ -307,8 +309,7 @@ export default function AnalisePage() {
               </tbody>
             </table>
           </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+        </div>
       </div>
     </div>
   );
