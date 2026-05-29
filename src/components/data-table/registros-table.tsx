@@ -33,6 +33,7 @@ interface RegistrosTableProps {
   onSendMatricula?: (registro: RegistroCompleto) => void;
   showObservacoes?: boolean;
   filterActiveOnly?: boolean;
+  disablePagination?: boolean;
 }
 
 type SortField = 'lote' | 'empreendimento' | 'etapa' | 'dias' | 'valor_total' | 'valor_ja_pago' | 'data_contrato';
@@ -67,6 +68,7 @@ export function RegistrosTable({
   onSendMatricula,
   showObservacoes = false,
   filterActiveOnly = false,
+  disablePagination = false,
 }: RegistrosTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [etapaFilters, setEtapaFilters] = useState<string[]>([]);
@@ -167,11 +169,12 @@ export function RegistrosTable({
     return data;
   }, [registros, searchTerm, etapaFilters, empFilters, boolFilters, sortField, sortDir, filterActiveOnly]);
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const totalPages = disablePagination ? 1 : Math.ceil(filtered.length / PAGE_SIZE);
   const paged = useMemo(() => {
+    if (disablePagination) return filtered;
     const start = page * PAGE_SIZE;
     return filtered.slice(start, start + PAGE_SIZE);
-  }, [filtered, page]);
+  }, [filtered, page, disablePagination]);
 
   const safeSetPage = (p: number) => setPage(Math.max(0, Math.min(p, totalPages - 1)));
 
@@ -648,7 +651,7 @@ export function RegistrosTable({
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {!disablePagination && totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
             <span className="text-xs text-gray-500">
               {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} de {filtered.length}

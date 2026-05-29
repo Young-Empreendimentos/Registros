@@ -57,6 +57,7 @@ export default function AtivosPage() {
         userRole={profile?.role || 'leitor'}
         onUpdate={handleUpdate}
         showObservacoes={true}
+        disablePagination
       />
     </div>
   );
