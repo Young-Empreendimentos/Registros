@@ -21,6 +21,7 @@ import {
   ETAPAS_ANALISE,
   getEtapaAnalise,
   getAndamento,
+  buildAndamentoUpdate,
   isRegistroEmAndamento,
   contarRegistrosEmAndamento,
 } from '@/lib/analise';
@@ -315,6 +316,7 @@ export default function AnalisePage() {
                           value={etapaExibida}
                           manual={item.registro.etapa_analise ?? null}
                           options={ETAPAS_ANALISE}
+                          fullLabel
                           disabled={!canEdit}
                           onSave={async (etapaAnalise) =>
                             handleUpdate(item.registro.id, { etapa_analise: etapaAnalise })
@@ -325,7 +327,7 @@ export default function AnalisePage() {
                         <InlineTextEdit
                           value={andamento}
                           onSave={async (v) =>
-                            handleUpdate(item.registro.id, { andamento: v || null })
+                            handleUpdate(item.registro.id, buildAndamentoUpdate(v))
                           }
                           disabled={!canEdit}
                           placeholder="Descrever andamento..."

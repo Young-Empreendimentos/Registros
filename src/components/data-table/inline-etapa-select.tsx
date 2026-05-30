@@ -16,6 +16,7 @@ interface InlineEtapaSelectProps {
   options: Etapa[];
   onSave: (etapaAnalise: Etapa | null) => Promise<void>;
   disabled?: boolean;
+  fullLabel?: boolean;
 }
 
 export function InlineEtapaSelect({
@@ -24,11 +25,19 @@ export function InlineEtapaSelect({
   options,
   onSave,
   disabled,
+  fullLabel,
 }: InlineEtapaSelectProps) {
   const [saving, setSaving] = useState(false);
 
   if (disabled) {
-    return <EtapaBadge etapa={value} />;
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <EtapaBadge etapa={value} fullLabel={fullLabel} />
+        {manual && (
+          <span className="text-[10px] text-orange-600 font-medium">manual</span>
+        )}
+      </span>
+    );
   }
 
   const handleChange = async (next: string) => {
@@ -51,7 +60,7 @@ export function InlineEtapaSelect({
     >
       <SelectTrigger className="h-auto min-h-8 min-w-[200px] border-orange-200 bg-white py-1 text-xs shadow-none">
         <span className="flex items-center gap-1.5">
-          <EtapaBadge etapa={value} />
+          <EtapaBadge etapa={value} fullLabel={fullLabel} />
           {manual && (
             <span className="text-[10px] text-orange-600 font-medium">manual</span>
           )}

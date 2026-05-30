@@ -6,7 +6,7 @@ import { EtapaBadge } from './etapa-badge';
 import { InlineTextEdit, InlineCheckbox, UrlField } from './inline-edit';
 import { DocumentPreview } from '@/components/document-preview';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { isRegistroEmAndamento } from '@/lib/analise';
+import { isRegistroEmAndamento, getAndamento, buildAndamentoUpdate } from '@/lib/analise';
 import { getEmpBorder } from '@/lib/emp-lote-display';
 import { STICKY_REGISTROS, STICKY_SHADOW } from '@/lib/sticky-table-columns';
 import { ClienteCell, EmpLoteCell } from './registro-identity-cells';
@@ -627,10 +627,12 @@ export function RegistrosTable({
                     {showObservacoes && (
                       <td className="px-2 py-1.5 min-w-[180px]">
                         <InlineTextEdit
-                          value={item.registro.observacoes}
-                          onSave={async (v) => onUpdate(item.registro.id, { observacoes: v || null })}
+                          value={getAndamento(item.registro)}
+                          onSave={async (v) =>
+                            onUpdate(item.registro.id, buildAndamentoUpdate(v))
+                          }
                           disabled={!canEdit}
-                          placeholder="Adicionar observação..."
+                          placeholder="Descrever andamento..."
                         />
                       </td>
                     )}

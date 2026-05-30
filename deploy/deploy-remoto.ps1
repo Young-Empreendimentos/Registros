@@ -10,16 +10,10 @@ $Branch = if ($env:DEPLOY_BRANCH) { $env:DEPLOY_BRANCH } else { "master" }
 
 Write-Host "→ Deploy em ${User}@${Host_}:${Dir} (branch $Branch)"
 
-$remote = @"
-set -e
-cd $Dir
-git fetch origin
-git checkout $Branch
-git pull origin $Branch
-docker compose build
-docker compose up -d
-docker compose ps
-"@
+# Comando em uma linha — evita CRLF do PowerShell quebrando o bash remoto
+$remote = "set -e; cd $Dir && git fetch origin && git checkout $Branch && git pull origin $Branch && docker compose build && docker compose up -d && docker compose ps"
 
-ssh "${User}@${Host_}" $remote
+ssh "${User}@${Host_}" "bash -lc '$remote'"
+if ($LASTEXITCODE -ne 0) { throw "Deploy falhou (exit $LASTEXITCODE)" }
+
 Write-Host "Deploy concluído."

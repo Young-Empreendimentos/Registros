@@ -17,7 +17,8 @@ const etapaConfig: Record<Etapa, { variant: 'default' | 'secondary' | 'destructi
   'Propriedade Young': { variant: 'outline', label: 'Propriedade Young' },
 };
 
-export function EtapaBadge({ etapa }: { etapa: Etapa }) {
+export function EtapaBadge({ etapa, fullLabel }: { etapa: Etapa; fullLabel?: boolean }) {
   const config = etapaConfig[etapa] || { variant: 'outline' as const, label: etapa };
-  return <Badge variant={config.variant}>{config.label}</Badge>;
+  const label = fullLabel ? etapa : config.label;
+  return <Badge variant={config.variant}>{label}</Badge>;
 }

@@ -22,7 +22,13 @@ export function getAndamento(registro: Registro): string | null {
   if (registro.andamento != null && registro.andamento !== '') {
     return registro.andamento;
   }
-  return registro.observacoes ?? null;
+  return null;
+}
+
+/** Grava andamento e espelha em observações para todas as abas verem o mesmo texto */
+export function buildAndamentoUpdate(text: string | null): Pick<Registro, 'andamento' | 'observacoes'> {
+  const value = text?.trim() ? text.trim() : null;
+  return { andamento: value, observacoes: value };
 }
 
 /** Empreendimento fora do acompanhamento em andamento / análise */

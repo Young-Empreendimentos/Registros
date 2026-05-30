@@ -43,7 +43,11 @@ export function InlineTextEdit({ value, onSave, disabled, type = 'text', placeho
   };
 
   if (disabled) {
-    return <span className="text-gray-500 text-[11px]">{value || '-'}</span>;
+    return (
+      <span className={cn('text-[11px]', value ? 'text-gray-700' : 'text-gray-400')}>
+        {value || '-'}
+      </span>
+    );
   }
 
   if (!editing) {
