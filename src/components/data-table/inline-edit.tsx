@@ -45,7 +45,7 @@ export function InlineTextEdit({ value, onSave, disabled, type = 'text', placeho
   if (disabled) {
     return (
       <span className={cn('text-[11px]', value ? 'text-gray-700' : 'text-gray-400')}>
-        {value || '-'}
+        {value || placeholder || '-'}
       </span>
     );
   }

@@ -50,6 +50,16 @@ export function RegistrosProvider({ children }: { children: ReactNode }) {
     fetchRegistros();
   }, [fetchRegistros]);
 
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        fetchRegistros(true);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [fetchRegistros]);
+
   const updateRegistro = async (registroId: string, updates: Partial<Registro>) => {
     setRegistros((prev) =>
       prev.map((r) => {
