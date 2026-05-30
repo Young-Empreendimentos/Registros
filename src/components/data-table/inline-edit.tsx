@@ -25,6 +25,10 @@ export function InlineTextEdit({ value, onSave, disabled, type = 'text', placeho
     if (editing) inputRef.current?.focus();
   }, [editing]);
 
+  useEffect(() => {
+    if (!editing) setEditValue(value || '');
+  }, [value, editing]);
+
   const handleSave = async () => {
     if (saving) return;
     if (editValue === (value || '')) {
