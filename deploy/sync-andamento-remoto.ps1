@@ -9,16 +9,10 @@ $Dir = if ($env:DEPLOY_DIR) { $env:DEPLOY_DIR } else { "/opt/registros" }
 
 Write-Host "Sync andamento em ${User}@${Host_}:${Dir}"
 
-# Servidor nao tem npm no host; roda one-shot com imagem node via Docker.
-# Script via stdin evita quebra de aspas no bash -lc (PowerShell -> SSH).
-$remoteScript = @"
-set -e
-cd $Dir
-git pull origin master
-docker run --rm -v ${Dir}:/app -w /app --env-file ${Dir}/.env.local node:20-alpine sh -c 'npm ci && npx tsx scripts/sync-andamento-canonico.ts'
-"@
+# Usa script .sh do repo (LF) — evita CRLF do PowerShell quebrando bash remoto
+$remote = "set -e; cd $Dir && git pull origin master && bash deploy/sync-andamento-remoto.sh"
 
-$remoteScript | ssh "${User}@${Host_}" bash
+ssh "${User}@${Host_}" "bash -lc '$remote'"
 if ($LASTEXITCODE -ne 0) { throw "Sync falhou (exit $LASTEXITCODE)" }
 
 Write-Host "Sync concluido."
