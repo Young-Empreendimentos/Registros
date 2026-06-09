@@ -14,10 +14,10 @@ export default function RegistrosPage() {
     await updateRegistro(registroId, updates);
   };
 
-  const handleSendBoleto = async (item: RegistroCompleto) => {
-    if (!item.registro.boleto_itbi_url) return;
+  const handleSendBoleto = async (item: RegistroCompleto, url: string) => {
+    if (!url) return;
     try {
-      await fetch('/api/email', {
+      const response = await fetch('/api/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -25,18 +25,21 @@ export default function RegistrosPage() {
           loteNumero: item.lote.numero,
           clienteNome: item.contrato?.cliente_nome || '',
           empreendimento: item.empreendimento.nome,
-          url: item.registro.boleto_itbi_url,
+          url,
         }),
       });
+      if (!response.ok) throw new Error('Falha ao enviar e-mail');
+      alert('E-mail com boleto ITBI enviado para Laís!');
     } catch (err) {
       console.error('Erro ao enviar e-mail:', err);
+      alert('Erro ao enviar e-mail do boleto ITBI. Tente novamente.');
     }
   };
 
-  const handleSendOP = async (item: RegistroCompleto) => {
-    if (!item.registro.op_registro_url) return;
+  const handleSendOP = async (item: RegistroCompleto, url: string) => {
+    if (!url) return;
     try {
-      await fetch('/api/email', {
+      const response = await fetch('/api/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -44,11 +47,14 @@ export default function RegistrosPage() {
           loteNumero: item.lote.numero,
           clienteNome: item.contrato?.cliente_nome || '',
           empreendimento: item.empreendimento.nome,
-          url: item.registro.op_registro_url,
+          url,
         }),
       });
+      if (!response.ok) throw new Error('Falha ao enviar e-mail');
+      alert('E-mail com OP de registro enviado para Laís!');
     } catch (err) {
       console.error('Erro ao enviar e-mail:', err);
+      alert('Erro ao enviar e-mail da OP de registro. Tente novamente.');
     }
   };
 

@@ -28,8 +28,8 @@ interface RegistrosTableProps {
   registros: RegistroCompleto[];
   userRole: UserRole;
   onUpdate: (registroId: string, updates: Record<string, unknown>) => Promise<void>;
-  onSendBoleto?: (registro: RegistroCompleto) => void;
-  onSendOP?: (registro: RegistroCompleto) => void;
+  onSendBoleto?: (registro: RegistroCompleto, url: string) => void;
+  onSendOP?: (registro: RegistroCompleto, url: string) => void;
   onSendMatricula?: (registro: RegistroCompleto) => void;
   showObservacoes?: boolean;
   filterActiveOnly?: boolean;
@@ -465,7 +465,7 @@ export function RegistrosTable({
                         value={item.registro.boleto_itbi_url}
                         onSave={async (v) => {
                           await onUpdate(item.registro.id, { boleto_itbi_url: v || null });
-                          if (v && onSendBoleto) onSendBoleto(item);
+                          if (v && onSendBoleto) onSendBoleto(item, v);
                         }}
                         onPreview={() =>
                           item.registro.boleto_itbi_url &&
@@ -494,7 +494,7 @@ export function RegistrosTable({
                         value={item.registro.op_registro_url}
                         onSave={async (v) => {
                           await onUpdate(item.registro.id, { op_registro_url: v || null });
-                          if (v && onSendOP) onSendOP(item);
+                          if (v && onSendOP) onSendOP(item, v);
                         }}
                         onPreview={() =>
                           item.registro.op_registro_url &&
