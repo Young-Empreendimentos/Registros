@@ -45,6 +45,9 @@ export function isExcluidoDoEmAndamento(item: RegistroCompleto): boolean {
 /** Mesmo critério da aba Análise e do contador "em andamento" em todo o sistema */
 export function isRegistroEmAndamento(item: RegistroCompleto): boolean {
   if (isExcluidoDoEmAndamento(item)) return false;
+  // Concluído na aba Registros (data_recebimento_ri ou matrícula) sai da análise,
+  // mesmo que etapa_analise manual ainda esteja preenchida.
+  if (item.etapa === 'Concluído') return false;
   return ETAPAS_ANALISE.includes(getEtapaAnalise(item));
 }
 

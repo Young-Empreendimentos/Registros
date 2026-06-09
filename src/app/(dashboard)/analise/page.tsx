@@ -164,7 +164,7 @@ export default function AnalisePage() {
             {contarRegistrosEmAndamento(registros)} registro(s) em andamento
           </p>
           <p className="text-orange-600/80 text-xs mt-0.5">
-            Etapa e andamento aqui são independentes da etapa automática nas outras abas.
+            Etapa e andamento aqui são independentes da etapa automática nas outras abas. Registros concluídos saem desta lista automaticamente.
           </p>
         </div>
       </div>
