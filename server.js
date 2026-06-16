@@ -1,7 +1,6 @@
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
-const cron = require('node-cron');
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = '0.0.0.0';
@@ -23,24 +22,4 @@ app.prepare().then(() => {
   }).listen(port, () => {
     console.log(`> Server ready on http://${hostname}:${port}`);
   });
-
-  cron.schedule('0 2 * * *', async () => {
-    console.log('[CRON] Starting daily pipeline (ingest + sync) at', new Date().toISOString());
-    try {
-      const response = await fetch(`http://localhost:${port}/api/pipeline-diario`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ secret: process.env.SYNC_API_SECRET }),
-      });
-      const result = await response.json();
-      const msg = result.sync?.message || result.ingest?.message || JSON.stringify(result);
-      console.log('[CRON] Pipeline result:', msg);
-    } catch (error) {
-      console.error('[CRON] Pipeline error:', error);
-    }
-  }, {
-    timezone: 'America/Sao_Paulo',
-  });
-
-  console.log('[CRON] Scheduled daily pipeline (Sienge→TI→Registros) for 2:00 AM (America/Sao_Paulo)');
 });
