@@ -12,25 +12,25 @@ export interface Usuario {
 export type Profile = Usuario;
 
 export interface Empreendimento {
-  id: string;
+  id: number;
   sienge_id: number;
   nome: string;
   created_at: string;
 }
 
 export interface Lote {
-  id: string;
+  id: number;
   sienge_unit_id: number;
   numero: string;
-  empreendimento_id: string;
+  empreendimento_id: number;
   valor_avista: number;
   created_at: string;
 }
 
 export interface Contrato {
-  id: string;
+  id: number;
   sienge_contract_id: number;
-  lote_id: string;
+  lote_id: number;
   cliente_nome: string;
   cliente_email: string;
   valor_total: number;
@@ -43,8 +43,8 @@ export interface Contrato {
 
 export interface Registro {
   id: string;
-  lote_id: string;
-  contrato_id: string | null;
+  lote_id: number;
+  contrato_id: number | null;
   data_solicitacao_itbi: string | null;
   valor_itbi: number | null;
   boleto_itbi_url: string | null;
@@ -72,7 +72,7 @@ export interface Registro {
 export interface Comprovante {
   id: string;
   registro_id: string;
-  lote_id: string;
+  lote_id: number;
   url: string;
   descricao: string | null;
   uploaded_by: string;

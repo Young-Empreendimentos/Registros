@@ -40,22 +40,22 @@ export async function GET() {
   const allowedEmps = (empsData || []).filter((e: { sienge_id: number }) => 
     ALLOWED_ENTERPRISE_IDS.has(e.sienge_id)
   );
-  const allowedEmpIds = new Set(allowedEmps.map((e: { id: string }) => e.id));
+  const allowedEmpIds = new Set(allowedEmps.map((e: { id: number }) => e.id));
 
-  const empMap = new Map(allowedEmps.map((e: { id: string; nome: string }) => [e.id, e.nome]));
-  
-  const allowedLotes = (lotesData || []).filter((l: { empreendimento_id: string }) => 
+  const empMap = new Map(allowedEmps.map((e: { id: number; nome: string }) => [e.id, e.nome]));
+
+  const allowedLotes = (lotesData || []).filter((l: { empreendimento_id: number }) =>
     allowedEmpIds.has(l.empreendimento_id)
   );
-  const allowedLoteIds = new Set(allowedLotes.map((l: { id: string }) => l.id));
-  
-  const loteMap = new Map(allowedLotes.map((l: { id: string; numero: string; empreendimento_id: string }) => [l.id, l]));
-  const regMap = new Map((regsData || []).map((r: { id: string; lote_id: string }) => [r.lote_id, r.id]));
+  const allowedLoteIds = new Set(allowedLotes.map((l: { id: number }) => l.id));
+
+  const loteMap = new Map(allowedLotes.map((l: { id: number; numero: string; empreendimento_id: number }) => [l.id, l]));
+  const regMap = new Map((regsData || []).map((r: { id: string; lote_id: number }) => [r.lote_id, r.id]));
 
   const enrichedComprovantes = (compData || [])
-    .filter((c: { lote_id: string }) => allowedLoteIds.has(c.lote_id))
-    .map((c: { id: string; url: string; descricao: string | null; created_at: string; lote_id: string; registro_id: string; uploaded_by: string }) => {
-      const lote = loteMap.get(c.lote_id) as { numero: string; empreendimento_id: string } | undefined;
+    .filter((c: { lote_id: number }) => allowedLoteIds.has(c.lote_id))
+    .map((c: { id: string; url: string; descricao: string | null; created_at: string; lote_id: number; registro_id: string; uploaded_by: string }) => {
+      const lote = loteMap.get(c.lote_id) as { numero: string; empreendimento_id: number } | undefined;
       return {
         ...c,
         lote_numero: lote?.numero || 'N/A',
@@ -64,7 +64,7 @@ export async function GET() {
     });
 
   const loteOptions = allowedLotes
-    .map((l: { id: string; numero: string; empreendimento_id: string }) => ({
+    .map((l: { id: number; numero: string; empreendimento_id: number }) => ({
       id: l.id,
       numero: l.numero,
       empreendimento: empMap.get(l.empreendimento_id) || 'N/A',

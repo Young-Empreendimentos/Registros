@@ -14,7 +14,7 @@ export interface ComprovanteRow {
   url: string;
   descricao: string | null;
   created_at: string;
-  lote_id: string;
+  lote_id: number;
   registro_id: string;
   uploaded_by: string;
   lote_numero?: string;
@@ -22,7 +22,7 @@ export interface ComprovanteRow {
 }
 
 export interface LoteOption {
-  id: string;
+  id: number;
   numero: string;
   empreendimento: string;
   registro_id: string;

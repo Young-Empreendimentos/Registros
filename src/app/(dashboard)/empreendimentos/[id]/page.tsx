@@ -11,7 +11,7 @@ import Link from 'next/link';
 
 export default function EmpreendimentoPage() {
   const params = useParams();
-  const empId = params.id as string;
+  const empId = Number(params.id);
   const { registros, loading, error, updateRegistro } = useRegistros();
   const { profile } = useProfile();
   const [empNome, setEmpNome] = useState<string>('');

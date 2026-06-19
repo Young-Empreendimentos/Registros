@@ -70,15 +70,15 @@ export async function GET() {
   const allowedEmps = empreendimentos.filter((e) => ALLOWED_ENTERPRISE_IDS.has(e.sienge_id));
   const allowedEmpIds = new Set(allowedEmps.map((e) => e.id));
 
-  const empMap = new Map<string, Empreendimento>();
+  const empMap = new Map<number, Empreendimento>();
   allowedEmps.forEach((e) => empMap.set(e.id, e));
 
-  const contratoByLote = new Map<string, Contrato>();
+  const contratoByLote = new Map<number, Contrato>();
   contratos.forEach((c) => {
     if (c.ativo) contratoByLote.set(c.lote_id, c);
   });
 
-  const loteMap = new Map<string, Lote>();
+  const loteMap = new Map<number, Lote>();
   lotes.forEach((l) => {
     if (allowedEmpIds.has(l.empreendimento_id)) {
       loteMap.set(l.id, l);

@@ -43,7 +43,7 @@ export default function ComprovantesPage() {
     if (!selectedLote || !url) return;
     setSaving(true);
 
-    const lote = lotes.find((l) => l.id === selectedLote);
+    const lote = lotes.find((l) => String(l.id) === selectedLote);
     if (!lote) return;
 
     try {
@@ -107,7 +107,7 @@ export default function ComprovantesPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {lotes.map((l) => (
-                        <SelectItem key={l.id} value={l.id}>
+                        <SelectItem key={l.id} value={String(l.id)}>
                           Lote {l.numero} - {l.empreendimento}
                         </SelectItem>
                       ))}
