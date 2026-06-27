@@ -237,7 +237,7 @@ export const MIGRACAO_INFO = {
   envProducao: [
     'SUPABASE_TI_URL / SUPABASE_TI_SERVICE_KEY / SUPABASE_TI_ANON_KEY',
     'NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY (mesmo projeto)',
-    'SMTP: comercial@youngempreendimentos.com.br',
+    'E-mail: RESEND_API_KEY + EMAIL_FROM (domínio verificado no Resend)',
   ],
 };
 

@@ -1,14 +1,6 @@
-import nodemailer from 'nodemailer';
-
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
-});
+// Envio via API HTTP do Resend (porta 443). SMTP direto não funciona no Railway,
+// que bloqueia as portas SMTP de saída (25/465/587).
+const RESEND_API_URL = 'https://api.resend.com/emails';
 
 interface EmailOptions {
   to: string;
@@ -17,12 +9,34 @@ interface EmailOptions {
 }
 
 export async function sendEmail(options: EmailOptions): Promise<void> {
-  await transporter.sendMail({
-    from: `"Young Empreendimentos" <${process.env.EMAIL_FROM}>`,
-    to: options.to,
-    subject: options.subject,
-    html: options.html,
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM;
+
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY não configurada no ambiente');
+  }
+  if (!from) {
+    throw new Error('EMAIL_FROM não configurada no ambiente');
+  }
+
+  const response = await fetch(RESEND_API_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: `Young Empreendimentos <${from}>`,
+      to: [options.to],
+      subject: options.subject,
+      html: options.html,
+    }),
   });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`Resend API error ${response.status}: ${detail}`);
+  }
 }
 
 export async function sendBoletoITBIEmail(params: {

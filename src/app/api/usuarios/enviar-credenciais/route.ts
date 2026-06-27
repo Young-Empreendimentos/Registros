@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     console.error('Erro ao enviar credenciais:', err);
     return NextResponse.json(
-      { error: 'Erro ao enviar e-mail. Verifique SMTP no servidor.' },
+      { error: 'Erro ao enviar e-mail. Verifique a configuração do Resend no servidor.' },
       { status: 500 }
     );
   }
