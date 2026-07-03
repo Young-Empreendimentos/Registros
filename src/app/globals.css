@@ -472,6 +472,55 @@ body.is-page-loading {
   border: 1px solid #FECACA;
 }
 
+.alert-info {
+  background: #FFF7ED;
+  color: #9A3412;
+  border: 1px solid #FED7AA;
+}
+
+/* Separador "ou" no login */
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border, #e5e7eb);
+}
+
+/* Botão "Entrar com Google" */
+.btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 44px;
+  border: 1px solid #dadce0;
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: #3c4043;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.btn-google:hover {
+  background: #f8f9fa;
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.15);
+}
+
 /* Loader */
 .young-loader {
   position: fixed;

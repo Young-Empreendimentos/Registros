@@ -19,9 +19,11 @@ export async function POST(request: Request) {
     .select('*')
     .eq('email', email.toLowerCase().trim())
     .eq('ativo', true)
+    .eq('aprovado', true)
     .single();
 
-  if (error || !user) {
+  // Usuário sem senha_hash entra somente pelo Google (sem aprovação, sem senha).
+  if (error || !user || !user.senha_hash) {
     return NextResponse.json(
       { error: 'Credenciais inválidas' },
       { status: 401 }

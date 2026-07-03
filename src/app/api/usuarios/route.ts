@@ -22,7 +22,7 @@ export async function GET() {
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from(T.usuarios)
-    .select('id, nome, email, role, ativo, created_at')
+    .select('id, nome, email, role, ativo, aprovado, auth_provider, created_at')
     .order('created_at');
 
   if (error) {
@@ -108,7 +108,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 403 });
   }
 
-  const { id, nome, email, role, ativo, password } = await request.json();
+  const { id, nome, email, role, ativo, aprovado, password } = await request.json();
 
   if (!id) {
     return NextResponse.json({ error: 'ID é obrigatório' }, { status: 400 });
@@ -125,6 +125,7 @@ export async function PUT(request: NextRequest) {
     updates.role = role;
   }
   if (ativo !== undefined) updates.ativo = ativo;
+  if (aprovado !== undefined) updates.aprovado = aprovado;
   if (password) {
     if (password.length < 6) {
       return NextResponse.json(
@@ -140,7 +141,7 @@ export async function PUT(request: NextRequest) {
     .from(T.usuarios)
     .update(updates)
     .eq('id', id)
-    .select('id, nome, email, role, ativo, created_at')
+    .select('id, nome, email, role, ativo, aprovado, auth_provider, created_at')
     .single();
 
   if (error) {

@@ -48,6 +48,8 @@ interface UsuarioRow {
   email: string;
   role: UserRole;
   ativo: boolean;
+  aprovado: boolean;
+  auth_provider?: string;
   created_at: string;
 }
 
@@ -248,6 +250,11 @@ export default function ConfiguracoesPage() {
         ativo: editAtivo,
       };
       if (editPassword) body.password = editPassword;
+      // Solicitação pendente: salvar = aprovar e liberar o acesso.
+      if (editUser.aprovado === false) {
+        body.aprovado = true;
+        body.ativo = true;
+      }
 
       const res = await fetch('/api/usuarios', {
         method: 'PUT',
@@ -678,9 +685,18 @@ export default function ConfiguracoesPage() {
             users.map((user) => (
               <div
                 key={user.id}
-                className="grid grid-cols-5 gap-4 px-4 py-3 rounded-lg hover:bg-orange-100/50 items-center transition-colors"
+                className={`grid grid-cols-5 gap-4 px-4 py-3 rounded-lg items-center transition-colors ${
+                  user.aprovado === false
+                    ? 'bg-amber-50 ring-1 ring-amber-200'
+                    : 'hover:bg-orange-100/50'
+                }`}
               >
-                <span className="text-orange-900 text-sm truncate">{user.nome || 'Sem nome'}</span>
+                <span className="text-orange-900 text-sm truncate">
+                  {user.nome || 'Sem nome'}
+                  {user.auth_provider === 'google' && (
+                    <span className="ml-1.5 text-[11px] text-orange-500 align-middle">via Google</span>
+                  )}
+                </span>
                 <span className="text-orange-700 text-sm truncate">{user.email}</span>
                 <span>
                   <Badge variant={roleBadgeVariant[user.role]}>
@@ -688,7 +704,12 @@ export default function ConfiguracoesPage() {
                   </Badge>
                 </span>
                 <span>
-                  {user.ativo ? (
+                  {user.aprovado === false ? (
+                    <Badge variant="secondary" className="bg-amber-500/15 text-amber-700 border-amber-500/30">
+                      <Clock className="w-3 h-3 mr-1" />
+                      Aguardando aprovação
+                    </Badge>
+                  ) : user.ativo ? (
                     <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
                       Ativo
                     </Badge>
@@ -699,6 +720,17 @@ export default function ConfiguracoesPage() {
                   )}
                 </span>
                 <span className="flex items-center gap-1">
+                  {user.aprovado === false && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-emerald-600 hover:text-emerald-700"
+                      onClick={() => openEdit(user)}
+                      title="Revisar e aprovar acesso"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -831,6 +863,13 @@ export default function ConfiguracoesPage() {
             <DialogDescription>{editUser?.email}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {editUser?.aprovado === false && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
+                <p className="text-amber-700 text-sm">
+                  Solicitação de acesso pendente. Defina o perfil e salve para <strong>aprovar</strong> e liberar o acesso.
+                </p>
+              </div>
+            )}
             {editError && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
                 <p className="text-red-400 text-sm">{editError}</p>
