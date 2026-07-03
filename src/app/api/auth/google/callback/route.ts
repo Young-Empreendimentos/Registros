@@ -3,11 +3,14 @@ import { exchangeAndVerify, getGoogleConfig, GOOGLE_STATE_COOKIE } from '@/lib/g
 import { createServiceClient } from '@/lib/supabase/server';
 import { T } from '@/lib/supabase/tables';
 import { signToken, COOKIE_NAME } from '@/lib/auth';
+import { getAppPublicUrl } from '@/lib/app-url';
 import { notificarGestoresNovaSolicitacao } from '@/lib/email/solicitacao-acesso';
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
-  const redirect = (path: string) => NextResponse.redirect(new URL(path, url.origin));
+  // Base pública: atrás do proxy do Railway, request.url aponta para o host interno (0.0.0.0).
+  const base = getAppPublicUrl();
+  const redirect = (path: string) => NextResponse.redirect(`${base}${path}`);
 
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');

@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { buildGoogleAuthUrl, GOOGLE_STATE_COOKIE } from '@/lib/google';
+import { getAppPublicUrl } from '@/lib/app-url';
 
 /** Inicia o login com Google: gera o state anti-CSRF e redireciona ao consentimento. */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const state = crypto.randomUUID();
     const response = NextResponse.redirect(buildGoogleAuthUrl(state));
@@ -16,6 +17,7 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('Google auth start error:', error);
-    return NextResponse.redirect(new URL('/login?erro=google_config', request.url));
+    // Base pública (atrás do proxy do Railway, request.url aponta para o host interno).
+    return NextResponse.redirect(`${getAppPublicUrl()}/login?erro=google_config`);
   }
 }
