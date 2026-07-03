@@ -11,10 +11,11 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isLoginPage = pathname === '/login';
+  const isAuthCallback = pathname === '/auth/callback';
   const isApiAuth = pathname.startsWith('/api/auth/');
   const isApiSync = pathname === '/api/sync';
   const isApiSyncLogs = pathname === '/api/sync-logs';
-  if (isApiAuth || isApiSync || isApiSyncLogs) {
+  if (isApiAuth || isApiSync || isApiSyncLogs || isAuthCallback) {
     return NextResponse.next();
   }
 
