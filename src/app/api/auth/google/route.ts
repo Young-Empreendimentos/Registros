@@ -4,7 +4,6 @@ import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase/config';
 import { createServiceClient } from '@/lib/supabase/server';
 import { T } from '@/lib/supabase/tables';
 import { signToken, COOKIE_NAME } from '@/lib/auth';
-import { notificarGestoresNovaSolicitacao } from '@/lib/email/solicitacao-acesso';
 
 const ALLOWED_DOMAIN = process.env.GOOGLE_ALLOWED_DOMAIN || 'youngempreendimentos.com.br';
 
@@ -59,31 +58,22 @@ export async function POST(request: Request) {
 
   // Não cadastrado → cria SOLICITAÇÃO pendente e NÃO emite sessão.
   if (!user) {
-    const { data: novo, error } = await supabase
-      .from(T.usuarios)
-      .insert({
-        nome,
-        email,
-        senha_hash: null,
-        role: 'leitor',
-        ativo: false,
-        aprovado: false,
-        auth_provider: 'google',
-      })
-      .select('id, nome, email')
-      .single();
+    const { error } = await supabase.from(T.usuarios).insert({
+      nome,
+      email,
+      senha_hash: null,
+      role: 'leitor',
+      ativo: false,
+      aprovado: false,
+      auth_provider: 'google',
+    });
 
     if (error) {
       console.error('Erro ao criar solicitação de acesso:', error);
       return NextResponse.json({ redirect: '/login?erro=solicitacao' }, { status: 500 });
     }
 
-    try {
-      await notificarGestoresNovaSolicitacao({ nome: novo.nome, email: novo.email });
-    } catch (err) {
-      console.error('Falha ao notificar gestores da nova solicitação:', err);
-    }
-
+    // Sem e-mail de aviso: gestores veem as solicitações pendentes na página principal.
     return NextResponse.json({ redirect: '/login?status=solicitado' });
   }
 

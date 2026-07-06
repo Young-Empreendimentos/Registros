@@ -4,6 +4,7 @@ import { useRegistros } from '@/hooks/use-registros';
 import { useProfile } from '@/hooks/use-profile';
 import { contarRegistrosEmAndamento } from '@/lib/analise';
 import { RegistrosTable } from '@/components/data-table/registros-table';
+import { PendingApprovalsBanner } from '@/components/pending-approvals-banner';
 import type { RegistroCompleto } from '@/types';
 
 export default function RegistrosPage() {
@@ -109,6 +110,8 @@ export default function RegistrosPage() {
           Controle completo de todos os lotes e registros
         </p>
       </div>
+
+      {profile?.role === 'gestor' && <PendingApprovalsBanner />}
 
       <div className="quick-cards-grid">
         {[
