@@ -8,11 +8,11 @@ import { Label } from '@/components/ui/label';
 import { SiteBrand } from '@/components/site-brand';
 import { YoungLoaderMark } from '@/components/young-loader-mark';
 import { getBrowserSupabase } from '@/lib/supabase/browser';
-import { LogIn, UserPlus } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 
 const GOOGLE_MESSAGES: Record<string, { text: string; type: 'info' | 'danger' }> = {
   'status:solicitado': {
-    text: 'Solicitação enviada! Um gestor precisa aprovar seu acesso. Você será avisado por e-mail.',
+    text: 'Solicitação enviada! Um gestor precisa aprovar seu acesso antes do primeiro login.',
     type: 'info',
   },
   'status:pendente': {
@@ -84,30 +84,6 @@ export default function LoginPage() {
       }
     } catch {
       setError('Login com Google indisponível. Verifique a configuração.');
-    }
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || 'Erro ao fazer login');
-        return;
-      }
-      router.push('/registros');
-      router.refresh();
-    } catch {
-      setError('Erro de conexão');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -206,35 +182,10 @@ export default function LoginPage() {
             </Button>
           </form>
         ) : (
-          <form onSubmit={handleLogin} className="space-y-4" data-no-loader>
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full h-11" disabled={loading}>
-              <LogIn className="w-5 h-5" />
-              {loading ? 'Entrando...' : 'Entrar'}
-            </Button>
-
-            <div className="login-divider"><span>ou</span></div>
+          <div className="space-y-4" data-no-loader>
+            <p className="text-center text-sm" style={{ color: 'var(--text-muted)' }}>
+              Entre com sua conta Google da Young.
+            </p>
 
             <button type="button" onClick={handleGoogleLogin} className="btn-google" data-no-loader>
               <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
@@ -245,7 +196,7 @@ export default function LoginPage() {
               </svg>
               Entrar com Google
             </button>
-          </form>
+          </div>
         )}
       </div>
     </div>
