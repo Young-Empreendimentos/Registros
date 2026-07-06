@@ -1,9 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'young-registros-jwt-secret-change-in-production'
-);
+// Checagem preguiçosa (em runtime): sem valor padrão embutido.
+function getJwtSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET não definida — configure uma variável de ambiente forte.');
+  }
+  return new TextEncoder().encode(secret);
+}
 
 const COOKIE_NAME = 'auth_token';
 
@@ -23,7 +28,7 @@ export async function middleware(request: NextRequest) {
 
   if (token) {
     try {
-      await jwtVerify(token, JWT_SECRET);
+      await jwtVerify(token, getJwtSecret());
       isAuthenticated = true;
     } catch {
       // token inválido ou expirado

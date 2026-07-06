@@ -1,9 +1,15 @@
 import { SignJWT, jwtVerify } from 'jose';
 import bcrypt from 'bcryptjs';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'young-registros-jwt-secret-change-in-production'
-);
+// Checagem preguiçosa (em runtime): sem valor padrão embutido. Sem JWT_SECRET,
+// falha ao assinar/verificar em vez de usar um segredo público conhecido.
+function getJwtSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET não definida — configure uma variável de ambiente forte.');
+  }
+  return new TextEncoder().encode(secret);
+}
 
 export const COOKIE_NAME = 'auth_token';
 const TOKEN_EXPIRY = '7d';
@@ -28,12 +34,12 @@ export async function signToken(payload: TokenPayload): Promise<string> {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(TOKEN_EXPIRY)
-    .sign(JWT_SECRET);
+    .sign(getJwtSecret());
 }
 
 export async function verifyToken(token: string): Promise<TokenPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, getJwtSecret());
     return payload as unknown as TokenPayload;
   } catch {
     return null;
