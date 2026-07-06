@@ -10,7 +10,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  serverExternalPackages: ['nodemailer'],
   devIndicators: false,
 };
 

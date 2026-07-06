@@ -89,6 +89,8 @@ export default function AnalisePage() {
           break;
         case 'empreendimento':
           cmp = a.empreendimento.nome.localeCompare(b.empreendimento.nome);
+          if (cmp === 0)
+            cmp = a.lote.numero.localeCompare(b.lote.numero, 'pt-BR', { numeric: true });
           break;
         case 'cliente':
           cmp = (a.contrato?.cliente_nome || '').localeCompare(b.contrato?.cliente_nome || '');

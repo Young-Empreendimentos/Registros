@@ -14,8 +14,7 @@ export async function middleware(request: NextRequest) {
   const isAuthCallback = pathname === '/auth/callback';
   const isApiAuth = pathname.startsWith('/api/auth/');
   const isApiSync = pathname === '/api/sync';
-  const isApiSyncLogs = pathname === '/api/sync-logs';
-  if (isApiAuth || isApiSync || isApiSyncLogs || isAuthCallback) {
+  if (isApiAuth || isApiSync || isAuthCallback) {
     return NextResponse.next();
   }
 
