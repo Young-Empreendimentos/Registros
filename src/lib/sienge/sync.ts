@@ -29,17 +29,10 @@ export async function runSync(
     .single();
 
   try {
-    // 1. Refresh da materialized view de valor_ja_pago
-    progress('refresh', 'Atualizando valores pagos...', 10);
-    const { error: mvError } = await supabase.rpc('registros_refresh_mv_valor_pago');
-    if (mvError) {
-      details.refresh_error = mvError.message;
-      progress('refresh', `Erro no refresh: ${mvError.message}`, 20);
-    } else {
-      progress('refresh', 'Valores pagos atualizados', 50);
-    }
+    // O valor pago agora é calculado AO VIVO na view registros_contratos
+    // (não existe mais matview de valor pago pra dar refresh).
 
-    // 2. Manutenção: novos registros, contrato_id, data_gatilho
+    // Manutenção: novos registros, contrato_id, data_gatilho
     progress('manutencao', 'Atualizando registros...', 60);
     const { data: resultado, error: manutError } = await supabase.rpc('registros_manutencao_diaria');
     if (manutError) {
@@ -52,12 +45,9 @@ export async function runSync(
     details.contrato_ids_atualizados = res.contrato_ids_atualizados ?? 0;
     details.gatilhos_setados = res.gatilhos_setados ?? 0;
 
-    // Se houve erro em algum passo crítico, marcar como erro
-    if (mvError || manutError) {
-      const erros = [
-        mvError ? `Refresh: ${mvError.message}` : '',
-        manutError ? `Manutenção: ${manutError.message}` : '',
-      ].filter(Boolean).join('; ');
+    // Se houve erro na manutenção, marcar como erro
+    if (manutError) {
+      const erros = `Manutenção: ${manutError.message}`;
       details.error = erros;
 
       if (logEntry) {
