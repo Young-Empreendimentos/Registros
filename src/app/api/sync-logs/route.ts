@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken, COOKIE_NAME } from '@/lib/auth';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createRegistrosClient } from '@/lib/supabase/server';
 import { T } from '@/lib/supabase/tables';
 
 export async function GET() {
@@ -11,7 +11,7 @@ export async function GET() {
   }
 
   try {
-    const supabase = createServiceClient();
+    const supabase = createRegistrosClient();
 
     const { data: logs, error } = await supabase
       .from(T.sync_logs)

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createRegistrosClient } from '@/lib/supabase/server';
 import { T } from '@/lib/supabase/tables';
 import { verifyPassword, signToken, COOKIE_NAME } from '@/lib/auth';
 
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = createServiceClient();
+  const supabase = createRegistrosClient();
   const { data: user, error } = await supabase
     .from(T.usuarios)
     .select('*')

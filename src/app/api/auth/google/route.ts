@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase/config';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createRegistrosClient } from '@/lib/supabase/server';
 import { T } from '@/lib/supabase/tables';
 import { signToken, COOKIE_NAME } from '@/lib/auth';
 
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     (supaUser.user_metadata?.name as string) ||
     email;
 
-  const supabase = createServiceClient();
+  const supabase = createRegistrosClient();
   const { data: user } = await supabase
     .from(T.usuarios)
     .select('id, nome, email, role, ativo, aprovado')

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken, COOKIE_NAME } from '@/lib/auth';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createRegistrosClient } from '@/lib/supabase/server';
 import { T } from '@/lib/supabase/tables';
 
 // Empreendimentos permitidos (sienge_id -> nome):
@@ -28,7 +28,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
   }
 
-  const supabase = createServiceClient();
+  const supabase = createRegistrosClient();
 
   const [{ data: compData }, { data: lotesData }, { data: empsData }, { data: regsData }] = await Promise.all([
     supabase.from(T.comprovantes).select('*').order('created_at', { ascending: false }),
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Dados incompletos' }, { status: 400 });
   }
 
-  const supabase = createServiceClient();
+  const supabase = createRegistrosClient();
   const { error } = await supabase.from(T.comprovantes).insert({
     registro_id,
     lote_id,

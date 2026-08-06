@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createRegistrosClient } from '@/lib/supabase/server';
 import { T } from '@/lib/supabase/tables';
 import { verifyToken, hashPassword, COOKIE_NAME } from '@/lib/auth';
 import { sendUsuarioCredenciaisEmail } from '@/lib/email/credenciais-usuario';
@@ -19,7 +19,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 403 });
   }
 
-  const supabase = createServiceClient();
+  const supabase = createRegistrosClient();
   const { data, error } = await supabase
     .from(T.usuarios)
     .select('id, nome, email, role, ativo, aprovado, auth_provider, created_at')
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Perfil inválido' }, { status: 400 });
   }
 
-  const supabase = createServiceClient();
+  const supabase = createRegistrosClient();
   const senhaHash = await hashPassword(password);
 
   const { data, error } = await supabase
@@ -136,7 +136,7 @@ export async function PUT(request: NextRequest) {
     updates.senha_hash = await hashPassword(password);
   }
 
-  const supabase = createServiceClient();
+  const supabase = createRegistrosClient();
   const { data, error } = await supabase
     .from(T.usuarios)
     .update(updates)
@@ -173,7 +173,7 @@ export async function DELETE(request: NextRequest) {
     );
   }
 
-  const supabase = createServiceClient();
+  const supabase = createRegistrosClient();
   const { error } = await supabase.from(T.usuarios).delete().eq('id', id);
 
   if (error) {

@@ -1,4 +1,4 @@
-import { createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient, createRegistrosClient } from '@/lib/supabase/server';
 import { T } from '@/lib/supabase/tables';
 
 export type ProgressCallback = (event: {
@@ -14,14 +14,15 @@ export async function runSync(
   message: string;
   details: Record<string, unknown>;
 }> {
-  const supabase = createServiceClient();
+  const supabase = createServiceClient();      // para .rpc() (funções ficam em public)
+  const registrosDb = createRegistrosClient(); // para .from() das tabelas registros_*
   const details: Record<string, unknown> = {};
 
   const progress = (step: string, detail: string, percent: number) => {
     onProgress?.({ step, detail, percent });
   };
 
-  const { data: logEntry } = await supabase
+  const { data: logEntry } = await registrosDb
     .from(T.sync_logs)
     .insert({ status: 'running', registros_atualizados: 0 })
     .select()
@@ -60,7 +61,7 @@ export async function runSync(
       details.error = erros;
 
       if (logEntry) {
-        await supabase
+        await registrosDb
           .from(T.sync_logs)
           .update({
             status: 'error',
@@ -81,9 +82,9 @@ export async function runSync(
     // 3. Contar totais para o log
     progress('contagem', 'Verificando totais...', 85);
     const [empCount, lotesCount, contratosCount] = await Promise.all([
-      supabase.from(T.empreendimentos).select('id', { count: 'exact', head: true }),
-      supabase.from(T.lotes).select('id', { count: 'exact', head: true }),
-      supabase.from(T.contratos).select('id', { count: 'exact', head: true }).eq('ativo', true),
+      registrosDb.from(T.empreendimentos).select('id', { count: 'exact', head: true }),
+      registrosDb.from(T.lotes).select('id', { count: 'exact', head: true }),
+      registrosDb.from(T.contratos).select('id', { count: 'exact', head: true }).eq('ativo', true),
     ]);
     details.enterprises_count = empCount.count ?? 0;
     details.units_count = lotesCount.count ?? 0;
@@ -97,7 +98,7 @@ export async function runSync(
     progress('salvando', 'Finalizando...', 95);
 
     if (logEntry) {
-      await supabase
+      await registrosDb
         .from(T.sync_logs)
         .update({
           status: 'success',
@@ -120,7 +121,7 @@ export async function runSync(
     details.error = errorMessage;
 
     if (logEntry) {
-      await supabase
+      await registrosDb
         .from(T.sync_logs)
         .update({
           status: 'error',

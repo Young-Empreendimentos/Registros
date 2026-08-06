@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken, COOKIE_NAME } from '@/lib/auth';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createRegistrosClient } from '@/lib/supabase/server';
 import { T } from '@/lib/supabase/tables';
 
 const UPDATABLE_FIELDS = new Set([
@@ -58,7 +58,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Nenhum campo válido para atualizar' }, { status: 400 });
   }
 
-  const supabase = createServiceClient();
+  const supabase = createRegistrosClient();
   const { data, error } = await supabase
     .from(T.registros)
     .update(updates)

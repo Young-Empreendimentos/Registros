@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken, COOKIE_NAME } from '@/lib/auth';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createRegistrosClient } from '@/lib/supabase/server';
 import { T } from '@/lib/supabase/tables';
 
 // Empreendimentos permitidos (sienge_id -> nome):
@@ -28,7 +28,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
   }
 
-  const supabase = createServiceClient();
+  const supabase = createRegistrosClient();
   const { data, error } = await supabase
     .from(T.empreendimentos)
     .select('*')

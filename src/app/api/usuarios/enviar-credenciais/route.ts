@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createRegistrosClient } from '@/lib/supabase/server';
 import { T } from '@/lib/supabase/tables';
 import { verifyToken, hashPassword, COOKIE_NAME } from '@/lib/auth';
 import { sendUsuarioCredenciaisEmail } from '@/lib/email/credenciais-usuario';
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const supabase = createServiceClient();
+  const supabase = createRegistrosClient();
   const { data: usuario, error } = await supabase
     .from(T.usuarios)
     .select('id, nome, email, role, ativo')

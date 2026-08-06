@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createRegistrosClient } from '@/lib/supabase/server';
 import { T } from '@/lib/supabase/tables';
 import { hashPassword, signToken, COOKIE_NAME } from '@/lib/auth';
 
 export async function GET() {
-  const supabase = createServiceClient();
+  const supabase = createRegistrosClient();
   const { count } = await supabase
     .from(T.usuarios)
     .select('*', { count: 'exact', head: true });
@@ -13,7 +13,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const supabase = createServiceClient();
+  const supabase = createRegistrosClient();
 
   const { count } = await supabase
     .from(T.usuarios)

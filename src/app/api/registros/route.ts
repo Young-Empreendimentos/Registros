@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken, COOKIE_NAME } from '@/lib/auth';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createRegistrosClient } from '@/lib/supabase/server';
 import { T } from '@/lib/supabase/tables';
 import { computarRegistroCompleto } from '@/lib/calculations';
 import type { Empreendimento, Lote, Contrato, Registro } from '@/types';
@@ -20,7 +20,7 @@ import type { Empreendimento, Lote, Contrato, Registro } from '@/types';
 const ALLOWED_ENTERPRISE_IDS = new Set([1, 2, 2003, 2004, 2005, 2007, 2009, 2010, 2011, 2014]);
 
 async function fetchAll<T>(
-  supabase: ReturnType<typeof createServiceClient>,
+  supabase: ReturnType<typeof createRegistrosClient>,
   table: string,
   filter?: { column: string; value: unknown }
 ): Promise<T[]> {
@@ -58,7 +58,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
   }
 
-  const supabase = createServiceClient();
+  const supabase = createRegistrosClient();
 
   const [empreendimentos, lotes, contratos, registros] = await Promise.all([
     fetchAll<Empreendimento>(supabase, T.empreendimentos),
