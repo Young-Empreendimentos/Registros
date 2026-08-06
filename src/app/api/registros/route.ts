@@ -30,7 +30,13 @@ async function fetchAll<T>(
   let hasMore = true;
 
   while (hasMore) {
-    let query = supabase.from(table).select('*').range(from, from + pageSize - 1);
+    // .order('id') é OBRIGATÓRIO: sem ordem estável, a paginação por .range()
+    // pula/repete linhas entre as páginas (contagem oscilava, lotes sumiam).
+    let query = supabase
+      .from(table)
+      .select('*')
+      .order('id', { ascending: true })
+      .range(from, from + pageSize - 1);
     if (filter) {
       query = query.eq(filter.column, filter.value);
     }
