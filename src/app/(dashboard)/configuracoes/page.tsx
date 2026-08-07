@@ -111,6 +111,8 @@ export default function ConfiguracoesPage() {
   const [syncStep, setSyncStep] = useState('');
   const [syncDetail, setSyncDetail] = useState('');
   const [syncResult, setSyncResult] = useState<string | null>(null);
+  const [refreshingValores, setRefreshingValores] = useState(false);
+  const [refreshValoresMsg, setRefreshValoresMsg] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const [addOpen, setAddOpen] = useState(false);
@@ -351,6 +353,24 @@ export default function ConfiguracoesPage() {
     }
   };
 
+  const handleRefreshValores = async () => {
+    setRefreshingValores(true);
+    setRefreshValoresMsg(null);
+    try {
+      const res = await fetch('/api/registros/refresh-valor-pago', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setRefreshValoresMsg(data.error || 'Erro ao atualizar valores');
+        return;
+      }
+      setRefreshValoresMsg('Valores pagos atualizados!');
+    } catch {
+      setRefreshValoresMsg('Erro de conexão');
+    } finally {
+      setRefreshingValores(false);
+    }
+  };
+
   const handleManualSync = async () => {
     setSyncing(true);
     setSyncResult(null);
@@ -487,7 +507,30 @@ export default function ConfiguracoesPage() {
               {syncResult}
             </span>
           )}
+
+          <Button variant="outline" onClick={handleRefreshValores} disabled={refreshingValores}>
+            {refreshingValores ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Atualizando valores...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4" />
+                Atualizar valores pagos
+              </>
+            )}
+          </Button>
+          {!refreshingValores && refreshValoresMsg && (
+            <span className={`text-sm ${refreshValoresMsg.includes('Erro') ? 'text-red-600' : 'text-emerald-600'}`}>
+              {refreshValoresMsg}
+            </span>
+          )}
         </div>
+        <p className="text-orange-600/80 text-xs mt-3">
+          &quot;Atualizar valores pagos&quot; recalcula o valor pago dos contratos na hora (útil após
+          um lançamento manual). Automático: 1x por dia, de manhã.
+        </p>
       </div>
 
       {/* Sync History Section */}
