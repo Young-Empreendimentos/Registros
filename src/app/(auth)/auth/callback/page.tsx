@@ -46,7 +46,8 @@ export default function AuthCallbackPage() {
         const data = await res.json().catch(() => ({}));
 
         // Não precisamos manter a sessão do Supabase — a nossa é o cookie JWT.
-        await supabase.auth.signOut().catch(() => {});
+        // scope local: o global apagava a sessão da pessoa em TODOS os sistemas (SSO Young, 02/10/2026)
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
 
         if (ativo) {
           router.replace(data?.redirect || '/login?erro=google');
