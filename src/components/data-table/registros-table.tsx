@@ -110,7 +110,9 @@ export function RegistrosTable({
           r.lote.numero.toLowerCase().includes(term) ||
           r.contrato?.cliente_nome.toLowerCase().includes(term) ||
           r.contrato?.cliente_email?.toLowerCase().includes(term) ||
-          r.empreendimento.nome.toLowerCase().includes(term)
+          r.empreendimento.nome.toLowerCase().includes(term) ||
+          (getAndamento(r.registro) || '').toLowerCase().includes(term) ||
+          (r.registro.observacoes || '').toLowerCase().includes(term)
       );
     }
 
@@ -217,7 +219,7 @@ export function RegistrosTable({
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400" />
             <Input
-              placeholder="Buscar lote, cliente, empreendimento..."
+              placeholder="Buscar lote, cliente, comentário..."
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setPage(0); }}
               className="pl-10"
