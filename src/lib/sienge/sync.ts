@@ -44,6 +44,8 @@ export async function runSync(
     details.new_registros = res.novos_registros ?? 0;
     details.contrato_ids_atualizados = res.contrato_ids_atualizados ?? 0;
     details.gatilhos_setados = res.gatilhos_setados ?? 0;
+    details.processos_arquivados = res.processos_arquivados ?? 0;
+    details.revendas_resetadas = res.revendas_resetadas ?? 0;
 
     // Se houve erro na manutenção, marcar como erro
     if (manutError) {
@@ -83,7 +85,8 @@ export async function runSync(
     const registrosAtualizados =
       (res.novos_registros ?? 0) +
       (res.contrato_ids_atualizados ?? 0) +
-      (res.gatilhos_setados ?? 0);
+      (res.gatilhos_setados ?? 0) +
+      (res.revendas_resetadas ?? 0);
 
     progress('salvando', 'Finalizando...', 95);
 
