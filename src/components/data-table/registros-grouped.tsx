@@ -112,15 +112,25 @@ export function RegistrosGrouped({
 
     const term = searchTerm.trim().toLowerCase();
     if (term) {
-      data = data.filter(
-        (r) =>
-          r.lote.numero.toLowerCase().includes(term) ||
-          r.contrato?.cliente_nome.toLowerCase().includes(term) ||
-          r.contrato?.cliente_email?.toLowerCase().includes(term) ||
-          r.empreendimento.nome.toLowerCase().includes(term) ||
-          (r.registro.andamento || '').toLowerCase().includes(term) ||
-          (r.registro.observacoes || '').toLowerCase().includes(term)
-      );
+      // Termo só com dígitos = busca por NÚMERO DE LOTE exato: "1" acha o lote 1 em
+      // todos os empreendimentos (não o 10/11/21). Senão, busca por texto.
+      const numericTerm = /^\d+$/.test(term) ? parseInt(term, 10) : null;
+      if (numericTerm !== null) {
+        data = data.filter((r) => {
+          const m = r.lote.numero.match(/\d+/);
+          return m ? parseInt(m[0], 10) === numericTerm : false;
+        });
+      } else {
+        data = data.filter(
+          (r) =>
+            r.lote.numero.toLowerCase().includes(term) ||
+            r.contrato?.cliente_nome.toLowerCase().includes(term) ||
+            r.contrato?.cliente_email?.toLowerCase().includes(term) ||
+            r.empreendimento.nome.toLowerCase().includes(term) ||
+            (r.registro.andamento || '').toLowerCase().includes(term) ||
+            (r.registro.observacoes || '').toLowerCase().includes(term)
+        );
+      }
     }
     if (etapaFilters.length > 0) {
       data = data.filter((r) => etapaFilters.includes(r.etapa));
@@ -249,7 +259,7 @@ export function RegistrosGrouped({
           <div className="relative flex-1 min-w-[220px] max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400" />
             <Input
-              placeholder="Buscar lote ou cliente em todos os empreendimentos..."
+              placeholder="Nº do lote (ex.: 1) ou cliente — em todos os empreendimentos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
