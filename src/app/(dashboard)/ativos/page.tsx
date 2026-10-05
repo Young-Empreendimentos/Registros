@@ -36,16 +36,10 @@ export default function AtivosPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-        {emAndamento.length} registro(s) em andamento · clique numa linha para ver e editar os detalhes
-      </p>
-
-      <RegistrosExpandable
-        registros={emAndamento}
-        userRole={profile?.role || 'leitor'}
-        onUpdate={handleUpdate}
-      />
-    </div>
+    <RegistrosExpandable
+      registros={emAndamento}
+      userRole={profile?.role || 'leitor'}
+      onUpdate={handleUpdate}
+    />
   );
 }
