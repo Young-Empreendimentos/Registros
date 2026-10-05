@@ -8,7 +8,6 @@ import {
   Receipt,
   Clock,
   Ban,
-  LayoutDashboard,
   CheckCircle2,
   TrendingUp,
 } from 'lucide-react';
@@ -209,16 +208,6 @@ export default function PainelPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <LayoutDashboard className="w-6 h-6" style={{ color: 'var(--primary)' }} />
-        <div>
-          <h1>Painel</h1>
-          <p className="page-description" style={{ margin: 0 }}>
-            O que precisa de atenção e como está o andamento dos registros
-          </p>
-        </div>
-      </div>
-
       {/* Precisa de atenção */}
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
