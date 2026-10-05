@@ -61,7 +61,7 @@ export default function PainelPage() {
     const faltaSolicitarITBI = emAndamento.filter((r) => stageOf(r) === 'Solicitar ITBI');
     const itbiAPagar = emAndamento.filter((r) => stageOf(r) === 'Pagar ITBI');
     const parados30 = emAndamento.filter((r) => (r.dias ?? 0) > 30);
-    const impugnados = emAndamento.filter((r) => r.registro.impugnado);
+    const comPendencias = emAndamento.filter((r) => getEtapaAnalise(r) === 'Com pendências');
 
     // --- Funil por etapa ---
     const funil = FUNNEL_ORDER.map((etapa) => ({
@@ -150,12 +150,12 @@ export default function PainelPage() {
           items: parados30,
         },
         {
-          key: 'impugnados',
-          label: 'Impugnados',
-          hint: 'Travados no cartório',
+          key: 'pendencias',
+          label: 'Com pendências',
+          hint: 'Impugnado ou marcado com pendência',
           color: '#751900',
           icon: Ban,
-          items: impugnados,
+          items: comPendencias,
         },
       ] as const,
       funil,
