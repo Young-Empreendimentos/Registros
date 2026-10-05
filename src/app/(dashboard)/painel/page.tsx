@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import {
   ETAPAS_ANALISE,
+  EMPREENDIMENTO_EXCLUIDO_EM_ANDAMENTO,
   filtrarRegistrosEmAndamento,
   getEtapaAnalise,
   isExcluidoDoEmAndamento,
@@ -61,7 +62,13 @@ export default function PainelPage() {
     const faltaSolicitarITBI = emAndamento.filter((r) => stageOf(r) === 'Solicitar ITBI');
     const itbiAPagar = emAndamento.filter((r) => stageOf(r) === 'Pagar ITBI');
     const parados30 = emAndamento.filter((r) => (r.dias ?? 0) > 30);
-    const comPendencias = emAndamento.filter((r) => getEtapaAnalise(r) === 'Com pendências');
+    // Pendência (impugnado ou etapa manual "Com pendências") importa mesmo com
+    // segurar_registro/CAIXA ligado — só exclui Morada da Coxilha (fora do acompanhamento).
+    const comPendencias = registros.filter(
+      (r) =>
+        r.empreendimento.nome !== EMPREENDIMENTO_EXCLUIDO_EM_ANDAMENTO &&
+        (r.registro.impugnado || getEtapaAnalise(r) === 'Com pendências')
+    );
 
     // --- Funil por etapa ---
     const funil = FUNNEL_ORDER.map((etapa) => ({
