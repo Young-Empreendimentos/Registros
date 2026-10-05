@@ -6,7 +6,6 @@ import type { Profile } from '@/types';
 const PAGE_TITLES: Record<string, string> = {
   '/painel': 'Dashboard',
   '/registros': 'Registros',
-  '/analise': 'Análise',
   '/ativos': 'Em Andamento',
   '/comprovantes': 'Comprovantes',
   '/configuracoes': 'Configurações',

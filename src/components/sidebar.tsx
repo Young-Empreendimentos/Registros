@@ -13,7 +13,6 @@ import {
   ChevronRight,
   ChevronDown,
   Building2,
-  BarChart3,
   HelpCircle,
   LayoutDashboard,
 } from 'lucide-react';
@@ -31,7 +30,6 @@ import { useSidebar } from '@/contexts/sidebar-context';
 const navItems = [
   { href: '/painel', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/registros', icon: FileText, label: 'Registros' },
-  { href: '/analise', icon: BarChart3, label: 'Análise' },
   { href: '/ativos', icon: Activity, label: 'Em Andamento' },
   { href: '/comprovantes', icon: FileCheck, label: 'Comprovantes' },
   { href: '/configuracoes', icon: Settings, label: 'Configurações', gestorOnly: true },
