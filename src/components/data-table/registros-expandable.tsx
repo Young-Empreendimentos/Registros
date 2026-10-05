@@ -3,7 +3,8 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import type { RegistroCompleto, UserRole } from '@/types';
 import { EtapaBadge } from './etapa-badge';
-import { InlineTextEdit, InlineCheckbox, UrlField } from './inline-edit';
+import { InlineTextEdit, UrlField } from './inline-edit';
+import { Checkbox } from '@/components/ui/checkbox';
 import { InlineEtapaSelect } from './inline-etapa-select';
 import { DocumentPreview } from '@/components/document-preview';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -520,6 +521,51 @@ export function DetalheLote({
 }: DetalheLoteProps) {
   const r = item.registro;
 
+  type FlagField = 'impugnado' | 'segurar_registro' | 'responsabilidade_cliente' | 'financiamento_caixa';
+  const [flagModal, setFlagModal] = useState<{ field: FlagField; label: string } | null>(null);
+  const [motivo, setMotivo] = useState('');
+  const [savingFlag, setSavingFlag] = useState(false);
+
+  const flags: Array<{ field: FlagField; label: string; checked: boolean; disabled: boolean }> = [
+    { field: 'impugnado', label: 'Impugnado', checked: r.impugnado, disabled: !canEditEtapa },
+    { field: 'responsabilidade_cliente', label: 'Resp. cliente', checked: r.responsabilidade_cliente, disabled: !canEdit },
+    { field: 'segurar_registro', label: 'Segurar registro', checked: r.segurar_registro, disabled: !canEdit },
+    { field: 'financiamento_caixa', label: 'Financ. CAIXA', checked: r.financiamento_caixa, disabled: !canEdit },
+  ];
+
+  const handleFlagChange = async (field: FlagField, label: string, next: boolean) => {
+    if (next) {
+      // Marcar exige motivo -> abre o popup (só salva ao confirmar)
+      setMotivo('');
+      setFlagModal({ field, label });
+    } else {
+      // Desmarcar não exige motivo
+      await onUpdate(r.id, { [field]: false });
+    }
+  };
+
+  const confirmarFlag = async () => {
+    if (!flagModal || !motivo.trim() || savingFlag) return;
+    const anterior = getAndamento(r) || '';
+    const data = new Date().toLocaleDateString('pt-BR');
+    const linha = `${data} — [${flagModal.label}] ${motivo.trim()}`;
+    const novoAndamento = anterior ? `${anterior}\n${linha}` : linha;
+    setSavingFlag(true);
+    try {
+      await onUpdate(r.id, { [flagModal.field]: true, ...buildAndamentoUpdate(novoAndamento) });
+      setFlagModal(null);
+      setMotivo('');
+    } finally {
+      setSavingFlag(false);
+    }
+  };
+
+  const fecharModal = () => {
+    if (savingFlag) return;
+    setFlagModal(null);
+    setMotivo('');
+  };
+
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-x-8 gap-y-5">
@@ -680,30 +726,20 @@ export function DetalheLote({
       <section>
         <SectionTitle>Situação</SectionTitle>
         <div className="flex flex-col gap-1.5 mb-3">
-          <InlineCheckbox
-            checked={r.impugnado}
-            onToggle={async (v) => onUpdate(r.id, { impugnado: v })}
-            disabled={!canEditEtapa}
-            label="Impugnado"
-          />
-          <InlineCheckbox
-            checked={r.responsabilidade_cliente}
-            onToggle={async (v) => onUpdate(r.id, { responsabilidade_cliente: v })}
-            disabled={!canEdit}
-            label="Resp. cliente"
-          />
-          <InlineCheckbox
-            checked={r.segurar_registro}
-            onToggle={async (v) => onUpdate(r.id, { segurar_registro: v })}
-            disabled={!canEdit}
-            label="Segurar registro"
-          />
-          <InlineCheckbox
-            checked={r.financiamento_caixa}
-            onToggle={async (v) => onUpdate(r.id, { financiamento_caixa: v })}
-            disabled={!canEdit}
-            label="Financ. CAIXA"
-          />
+          {flags.map((f) => (
+            <label
+              key={f.field}
+              className={`flex items-center gap-1.5 ${f.disabled ? 'opacity-60' : 'cursor-pointer'}`}
+            >
+              <Checkbox
+                checked={f.checked}
+                disabled={f.disabled || savingFlag}
+                onCheckedChange={(v) => handleFlagChange(f.field, f.label, v === true)}
+                className="h-3.5 w-3.5"
+              />
+              <span className="text-[11px] text-gray-600">{f.label}</span>
+            </label>
+          ))}
         </div>
 
         <div>
@@ -734,6 +770,53 @@ export function DetalheLote({
           disabled={!canEdit}
         />
       </section>
+
+      {flagModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+          onClick={fecharModal}
+        >
+          <div
+            className="w-full max-w-md rounded-xl border p-5 shadow-lg"
+            style={{ background: 'var(--bg-card)', borderColor: 'var(--gray-lighter)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-semibold mb-1">Motivo — {flagModal.label}</h3>
+            <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
+              Descreva o motivo. Fica registrado no andamento do lote.
+            </p>
+            <textarea
+              autoFocus
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              rows={3}
+              placeholder="Motivo da marcação..."
+              className="w-full text-sm rounded-md border p-2 bg-white resize-y focus:outline-none focus:ring-1 focus:ring-orange-300"
+              style={{ borderColor: 'var(--gray-lighter)' }}
+            />
+            <div className="flex justify-end gap-2 mt-3">
+              <button
+                type="button"
+                onClick={fecharModal}
+                disabled={savingFlag}
+                className="px-3 py-1.5 text-sm rounded-md hover:bg-[var(--bg-hover)]"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmarFlag}
+                disabled={!motivo.trim() || savingFlag}
+                className="px-3 py-1.5 text-sm rounded-md text-white disabled:opacity-50"
+                style={{ background: 'var(--primary)' }}
+              >
+                {savingFlag ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
