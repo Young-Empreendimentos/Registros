@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import type { RegistroCompleto, UserRole } from '@/types';
 import { EtapaBadge } from './etapa-badge';
 import { InlineTextEdit, InlineCheckbox, UrlField } from './inline-edit';
@@ -24,6 +24,7 @@ import {
   ArrowUpDown,
   ChevronRight,
   ChevronDown,
+  Pencil,
 } from 'lucide-react';
 
 type PreviewDoc = { url: string; title: string };
@@ -412,6 +413,90 @@ function EditRow({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
+function AndamentoEditor({
+  value,
+  onSave,
+  disabled,
+}: {
+  value: string | null;
+  onSave: (value: string) => Promise<void>;
+  disabled?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value || '');
+  const [saving, setSaving] = useState(false);
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (editing) ref.current?.focus();
+  }, [editing]);
+
+  useEffect(() => {
+    if (!editing) setDraft(value || '');
+  }, [value, editing]);
+
+  const save = async () => {
+    if (saving) return;
+    if (draft === (value || '')) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave(draft);
+      setEditing(false);
+    } catch {
+      // mantém em edição
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!disabled && editing) {
+    return (
+      <textarea
+        ref={ref}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            setDraft(value || '');
+            setEditing(false);
+          }
+        }}
+        rows={3}
+        disabled={saving}
+        placeholder="Descrever andamento..."
+        className="w-full text-[12.5px] leading-relaxed rounded-md border p-2 resize-y bg-white focus:outline-none focus:ring-1 focus:ring-orange-300"
+        style={{ borderColor: 'var(--gray-lighter)' }}
+      />
+    );
+  }
+
+  return (
+    <button
+      onClick={() => {
+        if (disabled) return;
+        setDraft(value || '');
+        setEditing(true);
+      }}
+      disabled={disabled}
+      className="group w-full text-left flex items-start gap-1.5"
+    >
+      <span
+        className="text-[12.5px] leading-relaxed whitespace-pre-wrap break-words"
+        style={{ color: value ? 'var(--text-main)' : 'var(--text-muted)' }}
+      >
+        {value || (disabled ? '—' : 'Descrever andamento...')}
+      </span>
+      {!disabled && (
+        <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-100 shrink-0 text-gray-400 mt-0.5" />
+      )}
+    </button>
+  );
+}
+
 interface DetalheLoteProps {
   item: RegistroCompleto;
   canEdit: boolean;
@@ -436,7 +521,8 @@ function DetalheLote({
   const r = item.registro;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-x-8 gap-y-5">
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-x-8 gap-y-5">
       {/* Valores & gatilho */}
       <section>
         <SectionTitle>Valores &amp; gatilho</SectionTitle>
@@ -590,9 +676,9 @@ function DetalheLote({
         )}
       </section>
 
-      {/* Situação & andamento */}
+      {/* Situação */}
       <section>
-        <SectionTitle>Situação &amp; andamento</SectionTitle>
+        <SectionTitle>Situação</SectionTitle>
         <div className="flex flex-col gap-1.5 mb-3">
           <InlineCheckbox
             checked={r.impugnado}
@@ -620,7 +706,7 @@ function DetalheLote({
           />
         </div>
 
-        <div className="mb-3">
+        <div>
           <p
             className="text-[10px] font-semibold uppercase tracking-wider mb-1"
             style={{ color: 'var(--text-muted)' }}
@@ -636,21 +722,17 @@ function DetalheLote({
             onSave={async (etapaAnalise) => onUpdate(r.id, { etapa_analise: etapaAnalise })}
           />
         </div>
+      </section>
+      </div>
 
-        <div>
-          <p
-            className="text-[10px] font-semibold uppercase tracking-wider mb-1"
-            style={{ color: 'var(--text-muted)' }}
-          >
-            Andamento
-          </p>
-          <InlineTextEdit
-            value={getAndamento(r)}
-            onSave={async (v) => onUpdate(r.id, buildAndamentoUpdate(v))}
-            disabled={!canEdit}
-            placeholder="Descrever andamento..."
-          />
-        </div>
+      {/* Andamento (largura total) */}
+      <section>
+        <SectionTitle>Andamento</SectionTitle>
+        <AndamentoEditor
+          value={getAndamento(r)}
+          onSave={async (v) => onUpdate(r.id, buildAndamentoUpdate(v))}
+          disabled={!canEdit}
+        />
       </section>
     </div>
   );
