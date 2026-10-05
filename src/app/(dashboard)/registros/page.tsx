@@ -2,8 +2,7 @@
 
 import { useRegistros } from '@/hooks/use-registros';
 import { useProfile } from '@/hooks/use-profile';
-import { contarRegistrosEmAndamento } from '@/lib/analise';
-import { RegistrosTable } from '@/components/data-table/registros-table';
+import { RegistrosGrouped } from '@/components/data-table/registros-grouped';
 import { PendingApprovalsBanner } from '@/components/pending-approvals-banner';
 import type { RegistroCompleto } from '@/types';
 
@@ -103,34 +102,10 @@ export default function RegistrosPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1>Registros</h1>
-        <p className="page-description">
-          Controle completo de todos os lotes e registros
-        </p>
-      </div>
-
+    <div className="space-y-4">
       {profile?.role === 'gestor' && <PendingApprovalsBanner />}
 
-      <div className="quick-cards-grid">
-        {[
-          { label: 'Total', value: registros.length },
-          { label: 'Prop. Young', value: registros.filter((r) => r.etapa === 'Propriedade Young').length },
-          { label: 'Vendido', value: registros.filter((r) => r.etapa === 'Vendido').length },
-          { label: 'Em Andamento', value: contarRegistrosEmAndamento(registros) },
-          { label: 'Concluído', value: registros.filter((r) => r.etapa === 'Concluído').length },
-          { label: 'Pendências', value: registros.filter((r) => r.etapa === 'Com pendências').length },
-        ].map(({ label, value }) => (
-          <div key={label} className="stat-card">
-            <p className="stat-label">{label}</p>
-            <p className="stat-value">{value}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="data-table-shell">
-      <RegistrosTable
+      <RegistrosGrouped
         registros={registros}
         userRole={profile?.role || 'leitor'}
         onUpdate={handleUpdate}
@@ -138,7 +113,6 @@ export default function RegistrosPage() {
         onSendOP={handleSendOP}
         onSendMatricula={handleSendMatricula}
       />
-      </div>
     </div>
   );
 }

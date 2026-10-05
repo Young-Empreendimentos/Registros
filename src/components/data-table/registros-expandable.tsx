@@ -27,7 +27,7 @@ import {
   Pencil,
 } from 'lucide-react';
 
-type PreviewDoc = { url: string; title: string };
+export type PreviewDoc = { url: string; title: string };
 
 interface RegistrosExpandableProps {
   registros: RegistroCompleto[];
@@ -508,7 +508,7 @@ interface DetalheLoteProps {
   onPreview: (doc: PreviewDoc) => void;
 }
 
-function DetalheLote({
+export function DetalheLote({
   item,
   canEdit,
   canEditEtapa,
