@@ -15,6 +15,7 @@ import {
   Building2,
   BarChart3,
   HelpCircle,
+  LayoutDashboard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
@@ -28,6 +29,7 @@ import {
 import { useSidebar } from '@/contexts/sidebar-context';
 
 const navItems = [
+  { href: '/painel', icon: LayoutDashboard, label: 'Painel' },
   { href: '/registros', icon: FileText, label: 'Registros' },
   { href: '/analise', icon: BarChart3, label: 'Análise' },
   { href: '/ativos', icon: Activity, label: 'Em Andamento' },
