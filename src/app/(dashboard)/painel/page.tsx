@@ -112,23 +112,6 @@ export default function PainelPage() {
     const concluidosMes = meses[meses.length - 1]?.count ?? 0;
     const mesesMax = Math.max(1, ...meses.map((m) => m.count));
 
-    // --- ITBI em números ---
-    const curMonth = monthKey(now);
-    const itbiAPagarTotal = itbiAPagar.reduce(
-      (s, r) => s + (r.registro.valor_itbi || 0),
-      0
-    );
-    let itbiRecolhidoMes = 0;
-    for (const r of registros) {
-      const dt = r.registro.data_recolhimento_itbi;
-      if (dt && monthKey(new Date(dt)) === curMonth) {
-        itbiRecolhidoMes += r.registro.valor_itbi || 0;
-      }
-    }
-    const divergencias = emAndamento.filter(
-      (r) => r.divergencias !== null && Math.abs(r.divergencias) > 1
-    );
-
     return {
       totalEmAndamento: emAndamento.length,
       concluidosTotal,
@@ -180,9 +163,6 @@ export default function PainelPage() {
       porEmp,
       meses,
       mesesMax,
-      itbiAPagarTotal,
-      itbiRecolhidoMes,
-      divergenciasCount: divergencias.length,
     };
   }, [registros]);
 
@@ -361,98 +341,68 @@ export default function PainelPage() {
           </div>
 
           <div className="details-section">
-            <div className="flex items-center gap-2 mb-4">
-              <Receipt className="w-4 h-4" style={{ color: 'var(--primary)' }} />
-              <h2 className="text-base font-semibold">ITBI em números</h2>
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingUp className="w-4 h-4" style={{ color: 'var(--secondary)' }} />
+              <h2 className="text-base font-semibold">Produtividade</h2>
             </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm" style={{ color: 'var(--text-muted)' }}>A pagar (guia emitida)</span>
-                <span className="text-sm font-semibold" style={{ color: '#F59E0B' }}>
-                  {formatCurrency(data.itbiAPagarTotal)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Recolhido no mês</span>
-                <span className="text-sm font-semibold">{formatCurrency(data.itbiRecolhidoMes)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Divergências de valor</span>
-                <span
-                  className="text-sm font-semibold"
-                  style={{ color: data.divergenciasCount > 0 ? '#DC2626' : 'var(--text-muted)' }}
-                >
-                  {data.divergenciasCount}
-                </span>
-              </div>
+            <div className="flex items-end gap-2 mb-5">
+              <CheckCircle2 className="w-5 h-5 mb-1" style={{ color: 'var(--secondary)' }} />
+              <span className="text-3xl font-bold">{data.concluidosMes}</span>
+              <span className="text-sm mb-1" style={{ color: 'var(--text-muted)' }}>concluídos este mês</span>
+            </div>
+            <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Últimos 6 meses</p>
+            <div className="flex items-end justify-between gap-2" style={{ height: 120 }}>
+              {data.meses.map((m) => (
+                <div key={m.key} className="flex flex-col items-center gap-1 flex-1">
+                  <span className="text-xs font-semibold">{m.count}</span>
+                  <div
+                    className="w-full rounded-t"
+                    style={{
+                      height: `${(m.count / data.mesesMax) * 90}px`,
+                      minHeight: m.count > 0 ? 4 : 0,
+                      background: 'var(--secondary)',
+                    }}
+                  />
+                  <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{m.label}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Por empreendimento + produtividade */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="details-section">
-          <h2 className="text-base font-semibold mb-4">Por empreendimento</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ color: 'var(--text-muted)' }} className="text-left text-xs">
-                  <th className="py-2 font-medium">Empreendimento</th>
-                  <th className="py-2 font-medium text-right">Em andamento</th>
-                  <th className="py-2 font-medium text-right">Concluídos</th>
-                  <th className="py-2 font-medium text-right">% concluído</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.porEmp.map((e) => {
-                  const total = e.emAndamento + e.concluidos;
-                  const pct = total > 0 ? Math.round((e.concluidos / total) * 100) : 0;
-                  return (
-                    <tr
-                      key={e.nome}
-                      className="border-t"
-                      style={{ borderColor: 'var(--gray-lighter)' }}
-                    >
-                      <td className="py-2 font-medium">{e.nome}</td>
-                      <td className="py-2 text-right">{e.emAndamento}</td>
-                      <td className="py-2 text-right" style={{ color: 'var(--text-muted)' }}>{e.concluidos}</td>
-                      <td className="py-2 text-right font-semibold">{pct}%</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="details-section">
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingUp className="w-4 h-4" style={{ color: 'var(--secondary)' }} />
-            <h2 className="text-base font-semibold">Produtividade</h2>
-          </div>
-          <div className="flex items-end gap-2 mb-5">
-            <CheckCircle2 className="w-5 h-5 mb-1" style={{ color: 'var(--secondary)' }} />
-            <span className="text-3xl font-bold">{data.concluidosMes}</span>
-            <span className="text-sm mb-1" style={{ color: 'var(--text-muted)' }}>concluídos este mês</span>
-          </div>
-          <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Últimos 6 meses</p>
-          <div className="flex items-end justify-between gap-2" style={{ height: 120 }}>
-            {data.meses.map((m) => (
-              <div key={m.key} className="flex flex-col items-center gap-1 flex-1">
-                <span className="text-xs font-semibold">{m.count}</span>
-                <div
-                  className="w-full rounded-t"
-                  style={{
-                    height: `${(m.count / data.mesesMax) * 90}px`,
-                    minHeight: m.count > 0 ? 4 : 0,
-                    background: 'var(--secondary)',
-                  }}
-                />
-                <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{m.label}</span>
-              </div>
-            ))}
-          </div>
+      {/* Por empreendimento */}
+      <div className="details-section">
+        <h2 className="text-base font-semibold mb-4">Por empreendimento</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ color: 'var(--text-muted)' }} className="text-left text-xs">
+                <th className="py-2 font-medium">Empreendimento</th>
+                <th className="py-2 font-medium text-right">Em andamento</th>
+                <th className="py-2 font-medium text-right">Concluídos</th>
+                <th className="py-2 font-medium text-right">% concluído</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.porEmp.map((e) => {
+                const total = e.emAndamento + e.concluidos;
+                const pct = total > 0 ? Math.round((e.concluidos / total) * 100) : 0;
+                return (
+                  <tr
+                    key={e.nome}
+                    className="border-t"
+                    style={{ borderColor: 'var(--gray-lighter)' }}
+                  >
+                    <td className="py-2 font-medium">{e.nome}</td>
+                    <td className="py-2 text-right">{e.emAndamento}</td>
+                    <td className="py-2 text-right" style={{ color: 'var(--text-muted)' }}>{e.concluidos}</td>
+                    <td className="py-2 text-right font-semibold">{pct}%</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
