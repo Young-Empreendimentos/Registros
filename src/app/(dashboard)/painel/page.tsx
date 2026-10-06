@@ -73,7 +73,12 @@ export default function PainelPage() {
     // --- Funil por etapa ---
     const funil = FUNNEL_ORDER.map((etapa) => ({
       etapa,
-      count: emAndamento.filter((r) => stageOf(r) === etapa).length,
+      // "Com pendências" usa a mesma regra do cartão (inclui impugnado em espera),
+      // pra não divergir do cartão de atenção acima.
+      count:
+        etapa === 'Com pendências'
+          ? comPendencias.length
+          : emAndamento.filter((r) => stageOf(r) === etapa).length,
     }));
     const funilMax = Math.max(1, ...funil.map((f) => f.count));
 
