@@ -403,7 +403,7 @@ export function RegistrosGrouped({
                             </td>
                             <td className="px-3 py-2 font-semibold">{item.lote.numero}</td>
                             <td className="px-3 py-2" style={{ color: 'var(--text-muted)' }}>
-                              {item.contrato?.cliente_nome || '—'}
+                              {item.contrato?.cliente_nome || item.registro.cliente_manual || '—'}
                             </td>
                             <td className="px-3 py-2">
                               <EtapaBadge etapa={item.etapa} />

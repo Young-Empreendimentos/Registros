@@ -64,6 +64,10 @@ export interface Registro {
   etapa_analise?: Etapa | null;
   /** Descrição de andamento (aba Análise); independente de observacoes */
   andamento?: string | null;
+  /** Dono informado manualmente (lotes sem contrato no Sienge: doação, Nedel, etc.) */
+  cliente_manual?: string | null;
+  /** Marca o lote como Concluído manualmente (sem RI/matrícula no sistema) */
+  concluido_manual?: boolean;
   data_gatilho: string | null;
   created_at: string;
   updated_at: string;
