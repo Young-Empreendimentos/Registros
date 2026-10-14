@@ -25,6 +25,7 @@ const UPDATABLE_FIELDS = new Set([
   'data_gatilho',
   'cliente_manual',
   'concluido_manual',
+  'motivo_conclusao',
 ]);
 
 export async function PATCH(

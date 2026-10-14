@@ -758,6 +758,42 @@ export function DetalheLote({
             onSave={async (etapaAnalise) => onUpdate(r.id, { etapa_analise: etapaAnalise })}
           />
         </div>
+
+        <div className="mt-3">
+          <p
+            className="text-[10px] font-semibold uppercase tracking-wider mb-1"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            Conclusão
+          </p>
+          {r.concluido_manual ? (
+            <div className="text-[12px]">
+              <span className="text-emerald-600 font-medium">
+                Concluído{r.motivo_conclusao ? ` (${r.motivo_conclusao})` : ' (manual)'}
+              </span>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => onUpdate(r.id, { concluido_manual: false, motivo_conclusao: null })}
+                  className="ml-2 text-[11px] text-gray-400 hover:text-gray-600 underline"
+                >
+                  desfazer
+                </button>
+              )}
+            </div>
+          ) : (
+            canEdit && (
+              <button
+                type="button"
+                onClick={() => onUpdate(r.id, { concluido_manual: true, motivo_conclusao: 'leilao' })}
+                className="text-[11px] px-2 py-1 rounded border"
+                style={{ borderColor: 'var(--gray-lighter)', color: 'var(--primary)' }}
+              >
+                Marcar Concluído por leilão
+              </button>
+            )
+          )}
+        </div>
       </section>
       </div>
 

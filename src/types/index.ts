@@ -68,6 +68,8 @@ export interface Registro {
   cliente_manual?: string | null;
   /** Marca o lote como Concluído manualmente (sem RI/matrícula no sistema) */
   concluido_manual?: boolean;
+  /** Motivo da conclusão manual: 'leilao' | 'doacao' | ... */
+  motivo_conclusao?: string | null;
   data_gatilho: string | null;
   created_at: string;
   updated_at: string;

@@ -407,6 +407,11 @@ export function RegistrosGrouped({
                             </td>
                             <td className="px-3 py-2">
                               <EtapaBadge etapa={item.etapa} />
+                              {item.registro.motivo_conclusao && (
+                                <span className="ml-1 text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                                  · {item.registro.motivo_conclusao}
+                                </span>
+                              )}
                             </td>
                             <td className="px-3 py-2 text-[12px]" style={{ color: 'var(--text-muted)' }}>
                               {formatDate(item.contrato?.data_contrato || null) || '—'}
