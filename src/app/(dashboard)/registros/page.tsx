@@ -2,81 +2,17 @@
 
 import { useRegistros } from '@/hooks/use-registros';
 import { useProfile } from '@/hooks/use-profile';
+import { useEmailHandlers } from '@/hooks/use-email-handlers';
 import { RegistrosGrouped } from '@/components/data-table/registros-grouped';
 import { PendingApprovalsBanner } from '@/components/pending-approvals-banner';
-import type { RegistroCompleto } from '@/types';
 
 export default function RegistrosPage() {
   const { registros, loading, error, updateRegistro } = useRegistros();
   const { profile } = useProfile();
+  const { handleSendBoleto, handleSendOP, handleSendMatricula } = useEmailHandlers();
 
   const handleUpdate = async (registroId: string, updates: Record<string, unknown>) => {
     await updateRegistro(registroId, updates);
-  };
-
-  const handleSendBoleto = async (item: RegistroCompleto, url: string) => {
-    if (!url) return;
-    try {
-      const response = await fetch('/api/email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'boleto_itbi',
-          loteNumero: item.lote.numero,
-          clienteNome: item.contrato?.cliente_nome || '',
-          empreendimento: item.empreendimento.nome,
-          url,
-        }),
-      });
-      if (!response.ok) throw new Error('Falha ao enviar e-mail');
-      alert('E-mail com boleto ITBI enviado para Laís!');
-    } catch (err) {
-      console.error('Erro ao enviar e-mail:', err);
-      alert('Erro ao enviar e-mail do boleto ITBI. Tente novamente.');
-    }
-  };
-
-  const handleSendOP = async (item: RegistroCompleto, url: string) => {
-    if (!url) return;
-    try {
-      const response = await fetch('/api/email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'op_registro',
-          loteNumero: item.lote.numero,
-          clienteNome: item.contrato?.cliente_nome || '',
-          empreendimento: item.empreendimento.nome,
-          url,
-        }),
-      });
-      if (!response.ok) throw new Error('Falha ao enviar e-mail');
-      alert('E-mail com OP de registro enviado para Laís!');
-    } catch (err) {
-      console.error('Erro ao enviar e-mail:', err);
-      alert('Erro ao enviar e-mail da OP de registro. Tente novamente.');
-    }
-  };
-
-  const handleSendMatricula = async (item: RegistroCompleto) => {
-    if (!item.registro.matricula_url || !item.contrato?.cliente_email) return;
-    try {
-      await fetch('/api/email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'matricula',
-          clienteNome: item.contrato.cliente_nome,
-          clienteEmail: item.contrato.cliente_email,
-          loteNumero: item.lote.numero,
-          empreendimento: item.empreendimento.nome,
-          url: item.registro.matricula_url,
-        }),
-      });
-      alert('E-mail com matrícula enviado ao cliente!');
-    } catch (err) {
-      console.error('Erro ao enviar e-mail:', err);
-    }
   };
 
   if (loading && registros.length === 0) {

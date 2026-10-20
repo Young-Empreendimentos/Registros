@@ -3,12 +3,14 @@
 import { useMemo } from 'react';
 import { useRegistros } from '@/hooks/use-registros';
 import { useProfile } from '@/hooks/use-profile';
+import { useEmailHandlers } from '@/hooks/use-email-handlers';
 import { RegistrosExpandable } from '@/components/data-table/registros-expandable';
 import { filtrarRegistrosEmAndamento } from '@/lib/analise';
 
 export default function AtivosPage() {
   const { registros, loading, error, updateRegistro } = useRegistros();
   const { profile } = useProfile();
+  const { handleSendBoleto, handleSendOP, handleSendMatricula } = useEmailHandlers();
 
   const emAndamento = useMemo(
     () => filtrarRegistrosEmAndamento(registros),
@@ -40,6 +42,9 @@ export default function AtivosPage() {
       registros={emAndamento}
       userRole={profile?.role || 'leitor'}
       onUpdate={handleUpdate}
+      onSendBoleto={handleSendBoleto}
+      onSendOP={handleSendOP}
+      onSendMatricula={handleSendMatricula}
     />
   );
 }
