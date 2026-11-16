@@ -33,6 +33,7 @@ export interface Contrato {
   lote_id: number;
   cliente_nome: string;
   cliente_email: string;
+  cliente_telefone?: string;
   valor_total: number;
   valor_ja_pago: number;
   data_contrato: string;

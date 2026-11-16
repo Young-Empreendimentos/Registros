@@ -566,8 +566,37 @@ export function DetalheLote({
     setMotivo('');
   };
 
+  const tel = item.contrato?.cliente_telefone?.trim() || '';
+  const telDigits = tel.replace(/\D/g, '');
+  const waNumber = telDigits ? (telDigits.startsWith('55') ? telDigits : `55${telDigits}`) : '';
+
   return (
     <div className="space-y-5">
+      {item.contrato && (tel || item.contrato.cliente_email) && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px]">
+          {tel && (
+            <a
+              href={`https://wa.me/${waNumber}`}
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium hover:underline"
+              style={{ color: 'var(--primary)' }}
+              title="Abrir no WhatsApp"
+            >
+              📞 {tel}
+            </a>
+          )}
+          {item.contrato.cliente_email && (
+            <a
+              href={`mailto:${item.contrato.cliente_email}`}
+              className="hover:underline"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              ✉️ {item.contrato.cliente_email}
+            </a>
+          )}
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-x-8 gap-y-5">
       {/* Valores & gatilho */}
       <section>
