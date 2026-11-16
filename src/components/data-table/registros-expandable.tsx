@@ -783,14 +783,24 @@ export function DetalheLote({
             </div>
           ) : (
             canEdit && (
-              <button
-                type="button"
-                onClick={() => onUpdate(r.id, { concluido_manual: true, motivo_conclusao: 'leilao' })}
-                className="text-[11px] px-2 py-1 rounded border"
-                style={{ borderColor: 'var(--gray-lighter)', color: 'var(--primary)' }}
-              >
-                Marcar Concluído por leilão
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => onUpdate(r.id, { concluido_manual: true, motivo_conclusao: 'leilao' })}
+                  className="text-[11px] px-2 py-1 rounded border"
+                  style={{ borderColor: 'var(--gray-lighter)', color: 'var(--primary)' }}
+                >
+                  Marcar Concluído por leilão
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onUpdate(r.id, { concluido_manual: true, motivo_conclusao: 'caixa' })}
+                  className="text-[11px] px-2 py-1 rounded border"
+                  style={{ borderColor: 'var(--gray-lighter)', color: 'var(--primary)' }}
+                >
+                  Marcar Concluído pela Caixa
+                </button>
+              </div>
             )
           )}
         </div>
